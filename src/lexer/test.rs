@@ -3,18 +3,37 @@ use super::{
     token::{Token, TokenKind::*},
 };
 
-#[test]
-fn test_number() {
-    let inputs = ["0", "101"];
-
+fn assert_inputs<const N: usize>(inputs: [&str; N], mut test: impl FnMut(&mut Cursor, &str) -> ()) {
     for input in inputs {
         let mut cursor = Cursor::new(input);
 
+        test(&mut cursor, input);
+    }
+}
+
+#[test]
+fn test_unsigned_number() {
+    let inputs = ["0", "101"];
+
+    assert_inputs(inputs, |cursor, input| {
         assert_eq!(
             cursor.advance_token(),
             Token::new(Number, input.len().try_into().unwrap())
-        )
-    }
+        );
+    });
+}
+
+#[test]
+fn test_signed_number() {
+    let inputs = ["-0", "-101"];
+
+    assert_inputs(inputs, |cursor, input| {
+        assert_eq!(cursor.advance_token(), Token::new(Minus, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(Number, input[1..].len().try_into().unwrap())
+        );
+    });
 }
 
 #[test]
