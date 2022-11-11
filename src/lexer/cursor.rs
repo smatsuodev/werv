@@ -3,6 +3,10 @@ use std::str::Chars;
 
 const EOF_CHAR: char = '\0';
 
+fn is_ident(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_'
+}
+
 pub struct Cursor<'a> {
     len_remaining: usize,
     chars: Chars<'a>,
@@ -55,11 +59,12 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn advance_token(&mut self) -> Token {
+        self.eat_whitespace();
+
         if self.is_eof() {
             return Token::new(TokenKind::Eof, 0);
         }
 
-        self.eat_whitespace();
         self.reset_pos_within_token();
 
         let kind = match self.first() {
@@ -96,16 +101,17 @@ impl<'a> Cursor<'a> {
             }
             '>' => TokenKind::Gt,
 
-            c => {
-                if c.is_digit(10) {
-                    self.bump();
-                    self.eat_while(|c| c.is_digit(10));
+            c if c.is_digit(10) => {
+                self.eat_while(|c| c.is_digit(10));
 
-                    return Token::new(TokenKind::Number, self.pos_within_token());
-                } else {
-                    TokenKind::Unknown
-                }
+                return Token::new(TokenKind::Number, self.pos_within_token());
             }
+            c if is_ident(c) => {
+                self.eat_while(|c| is_ident(c));
+
+                return Token::new(TokenKind::Ident, self.pos_within_token());
+            }
+            _ => TokenKind::Unknown,
         };
 
         self.bump();

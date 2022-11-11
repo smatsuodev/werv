@@ -111,3 +111,35 @@ fn test_parenthesis() {
 
     assert_tokens(input, expects);
 }
+
+#[test]
+fn test_ident() {
+    let input = r#"
+SIZE = 10;
+lhs = 10; 
+rhs = 20; 
+_result = lhs + rhs;
+"#;
+    let expects = [
+        (Ident, 4),
+        (Assign, 1),
+        (Number, 2),
+        (SemiColon, 1),
+        (Ident, 3),
+        (Assign, 1),
+        (Number, 2),
+        (SemiColon, 1),
+        (Ident, 3),
+        (Assign, 1),
+        (Number, 2),
+        (SemiColon, 1),
+        (Ident, 7),
+        (Assign, 1),
+        (Ident, 3),
+        (Plus, 1),
+        (Ident, 3),
+        (SemiColon, 1),
+    ];
+
+    assert_tokens(input, expects);
+}

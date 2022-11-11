@@ -50,7 +50,7 @@ pub enum TokenKind {
     Number,
 
     /// 識別子
-    /// (a-z|A-Z|_)+
+    /// ( [a-z] | [A-Z] | "_" )+
     Ident,
 
     /// 上記以外のトークン
