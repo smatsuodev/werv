@@ -21,8 +21,31 @@ pub enum TokenKind {
     /// /
     Slash,
 
+    /// =
+    Assign,
+
+    /// ==
+    Eq,
+    /// !=
+    Ne,
+    /// <
+    Lt,
+    /// <=
+    Le,
+    /// >
+    Gt,
+    /// >=
+    Ge,
+
+    /// デリミタ
+    SemiColon,
+    Comma,
+
     /// 数字
     Number,
+
+    /// 識別子
+    Ident,
 
     /// 上記以外のトークン
     Unknown,

@@ -24,6 +24,14 @@ impl<'a> Cursor<'a> {
         self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
 
+    pub(crate) fn second(&self) -> char {
+        let mut iter = self.chars.clone();
+
+        iter.next();
+
+        iter.next().unwrap_or(EOF_CHAR)
+    }
+
     fn is_eof(&self) -> bool {
         self.chars.as_str().is_empty()
     }
@@ -32,6 +40,14 @@ impl<'a> Cursor<'a> {
         while !self.is_eof() && cond(self.first()) {
             self.bump();
         }
+    }
+
+    fn pos_within_token(&self) -> u32 {
+        (self.len_remaining - self.chars.as_str().len()) as u32
+    }
+
+    fn reset_pos_within_token(&mut self) {
+        self.len_remaining = self.chars.as_str().len();
     }
 
     fn eat_whitespace(&mut self) {
@@ -44,37 +60,54 @@ impl<'a> Cursor<'a> {
         }
 
         self.eat_whitespace();
+        self.reset_pos_within_token();
 
-        let mut len = 1;
         let kind = match self.first() {
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
+            ';' => TokenKind::SemiColon,
+            ',' => TokenKind::Comma,
+
+            '=' if self.second() == '=' => {
+                self.bump();
+
+                TokenKind::Eq
+            }
+            '=' => TokenKind::Assign,
+            '!' if self.second() == '=' => {
+                self.bump();
+
+                TokenKind::Ne
+            }
+            '<' if self.second() == '=' => {
+                self.bump();
+
+                TokenKind::Le
+            }
+            '<' => TokenKind::Lt,
+            '>' if self.second() == '=' => {
+                self.bump();
+
+                TokenKind::Ge
+            }
+            '>' => TokenKind::Gt,
+
             c => {
                 if c.is_digit(10) {
                     self.bump();
-                    self.eat_while(|c| {
-                        if c.is_digit(10) {
-                            len += 1;
+                    self.eat_while(|c| c.is_digit(10));
 
-                            true
-                        } else {
-                            false
-                        }
-                    });
-
-                    TokenKind::Number
+                    return Token::new(TokenKind::Number, self.pos_within_token());
                 } else {
                     TokenKind::Unknown
                 }
             }
         };
 
-        if len == 1 {
-            self.bump();
-        }
+        self.bump();
 
-        Token::new(kind, len)
+        Token::new(kind, self.pos_within_token())
     }
 }
