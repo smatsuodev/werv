@@ -41,10 +41,16 @@ pub enum TokenKind {
     SemiColon,
     Comma,
 
+    /// (
+    LParen,
+    /// )
+    RParen,
+
     /// 数字
     Number,
 
     /// 識別子
+    /// (a-z|A-Z|_)+
     Ident,
 
     /// 上記以外のトークン

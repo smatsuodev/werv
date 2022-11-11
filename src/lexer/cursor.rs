@@ -69,6 +69,8 @@ impl<'a> Cursor<'a> {
             '/' => TokenKind::Slash,
             ';' => TokenKind::SemiColon,
             ',' => TokenKind::Comma,
+            '(' => TokenKind::LParen,
+            ')' => TokenKind::RParen,
 
             '=' if self.second() == '=' => {
                 self.bump();

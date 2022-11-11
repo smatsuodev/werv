@@ -1,6 +1,9 @@
 use super::{
     cursor::Cursor,
-    token::{Token, TokenKind::*},
+    token::{
+        Token,
+        TokenKind::{self, *},
+    },
 };
 
 fn assert_inputs<const N: usize>(inputs: [&str; N], mut test: impl FnMut(&mut Cursor, &str) -> ()) {
@@ -9,6 +12,16 @@ fn assert_inputs<const N: usize>(inputs: [&str; N], mut test: impl FnMut(&mut Cu
 
         test(&mut cursor, input);
     }
+}
+
+fn assert_tokens<const N: usize>(input: &str, expects: [(TokenKind, u32); N]) {
+    let mut cursor = Cursor::new(input);
+
+    for (kind, len) in expects {
+        assert_eq!(cursor.advance_token(), Token::new(kind, len));
+    }
+
+    assert_eq!(cursor.advance_token(), Token::new(Eof, 0));
 }
 
 #[test]
@@ -50,13 +63,8 @@ fn test_arithmetic() {
         (Slash, 1),
         (Number, 5),
     ];
-    let mut cursor = Cursor::new(input);
 
-    for (kind, len) in expects {
-        assert_eq!(cursor.advance_token(), Token::new(kind, len));
-    }
-
-    assert_eq!(cursor.advance_token(), Token::new(Eof, 0));
+    assert_tokens(input, expects);
 }
 
 #[test]
@@ -80,4 +88,26 @@ fn test_condition() {
         );
         assert_eq!(cursor.advance_token(), Token::new(Number, 2));
     }
+}
+
+#[test]
+fn test_parenthesis() {
+    let input = "((10+1)*3+1)/20";
+    let expects = [
+        (LParen, 1),
+        (LParen, 1),
+        (Number, 2),
+        (Plus, 1),
+        (Number, 1),
+        (RParen, 1),
+        (Asterisk, 1),
+        (Number, 1),
+        (Plus, 1),
+        (Number, 1),
+        (RParen, 1),
+        (Slash, 1),
+        (Number, 2),
+    ];
+
+    assert_tokens(input, expects);
 }
