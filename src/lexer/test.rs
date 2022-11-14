@@ -39,3 +39,24 @@ fn test_arithmetic() {
         assert_eq!(lexer.next_token(), Token::new(kind, len));
     }
 }
+
+#[test]
+fn test_reserved() {
+    let input = "! = == != < <= > >=";
+    let expects = [
+        (Bang, 1),
+        (Assign, 1),
+        (Eq, 2),
+        (Ne, 2),
+        (Lt, 1),
+        (Le, 2),
+        (Gt, 1),
+        (Ge, 2),
+        (EOF, 0),
+    ];
+    let mut lexer = Lexer::new(input);
+
+    for (kind, len) in expects {
+        assert_eq!(lexer.next_token(), Token::new(kind, len));
+    }
+}

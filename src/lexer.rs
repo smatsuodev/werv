@@ -30,6 +30,17 @@ impl Lexer<'_> {
         self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
 
+    /// いま着目している文字を返す
+    fn second(&self) -> char {
+        let mut chars = self.chars.clone();
+
+        // chars.nth(1)よりもchars.next()を2回呼ぶ方がパフォーマンスがいいらしい
+        // 参考: https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer/src/cursor.rs#L52
+        chars.next();
+
+        chars.next().unwrap_or(EOF_CHAR)
+    }
+
     /// 入力文字列を全てトークナイズし終わったなら真を、
     /// そうでないなら偽を返す
     fn is_eof(&self) -> bool {
@@ -53,8 +64,21 @@ impl Lexer<'_> {
         }
     }
 
-    fn eat_whitespaces(&mut self) {
+    /// 空白を無視する
+    fn eat_whitespace(&mut self) {
         self.eat_while(|c| c.is_whitespace());
+    }
+
+    /// 次の文字が`ch`なら文字を1文字読み進めて真を返す
+    /// それ以外なら偽を返す
+    fn is_peek(&mut self, ch: char) -> bool {
+        if self.second() == ch {
+            self.bump();
+
+            true
+        } else {
+            false
+        }
     }
 
     /// 次のトークンを返す
@@ -63,7 +87,7 @@ impl Lexer<'_> {
             return Token::new(TokenKind::EOF, 0);
         }
 
-        self.eat_whitespaces();
+        self.eat_whitespace();
         self.reset_pos_within_token();
 
         let kind = match self.first() {
@@ -71,6 +95,14 @@ impl Lexer<'_> {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
+            '!' if self.is_peek('=') => TokenKind::Ne,
+            '!' => TokenKind::Bang,
+            '=' if self.is_peek('=') => TokenKind::Eq,
+            '<' if self.is_peek('=') => TokenKind::Le,
+            '<' => TokenKind::Lt,
+            '>' if self.is_peek('=') => TokenKind::Ge,
+            '>' => TokenKind::Gt,
+            '=' => TokenKind::Assign,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
             c if c.is_digit(10) => {
