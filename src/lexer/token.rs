@@ -21,4 +21,6 @@ pub enum TokenKind {
     Minus,
     Asterisk,
     Slash,
+    LParen,
+    RParen,
 }

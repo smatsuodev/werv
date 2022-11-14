@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenKind::*};
+use crate::lexer::token::{Token, TokenKind::*};
 
 use super::Lexer;
 
@@ -16,20 +16,23 @@ fn test_number() {
 
 #[test]
 fn test_arithmetic() {
-    let input = "1 + 22 - 333 * 4444 / 55555";
+    let input = "(1 + (22 - 333) * 4444) / 55555";
     let expects = [
+        (LParen, 1),
         (Number, 1),
         (Plus, 1),
+        (LParen, 1),
         (Number, 2),
         (Minus, 1),
         (Number, 3),
+        (RParen, 1),
         (Asterisk, 1),
         (Number, 4),
+        (RParen, 1),
         (Slash, 1),
         (Number, 5),
         (EOF, 0),
     ];
-
     let mut lexer = Lexer::new(input);
 
     for (kind, len) in expects {

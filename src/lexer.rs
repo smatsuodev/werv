@@ -1,8 +1,9 @@
-use crate::token::{Token, TokenKind};
-use std::str::Chars;
-
 #[cfg(test)]
 mod test;
+mod token;
+
+use self::token::{Token, TokenKind};
+use std::str::Chars;
 
 const EOF_CHAR: char = '\0';
 
@@ -70,6 +71,8 @@ impl Lexer<'_> {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
+            '(' => TokenKind::LParen,
+            ')' => TokenKind::RParen,
             c if c.is_digit(10) => {
                 self.eat_while(|c| c.is_digit(10));
 
