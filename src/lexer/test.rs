@@ -1,145 +1,62 @@
-use super::{
-    cursor::Cursor,
-    token::{
-        Token,
-        TokenKind::{self, *},
-    },
-};
+use crate::lexer::token::{Token, TokenKind::*};
 
-fn assert_inputs<const N: usize>(inputs: [&str; N], mut test: impl FnMut(&mut Cursor, &str) -> ()) {
-    for input in inputs {
-        let mut cursor = Cursor::new(input);
-
-        test(&mut cursor, input);
-    }
-}
-
-fn assert_tokens<const N: usize>(input: &str, expects: [(TokenKind, u32); N]) {
-    let mut cursor = Cursor::new(input);
-
-    for (kind, len) in expects {
-        assert_eq!(cursor.advance_token(), Token::new(kind, len));
-    }
-
-    assert_eq!(cursor.advance_token(), Token::new(Eof, 0));
-}
+use super::Lexer;
 
 #[test]
-fn test_unsigned_number() {
-    let inputs = ["0", "101"];
+fn test_number() {
+    let tests = ["0", "123"];
 
-    assert_inputs(inputs, |cursor, input| {
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(Number, input.len().try_into().unwrap())
-        );
-    });
-}
+    for input in tests {
+        let mut lexer = Lexer::new(input);
 
-#[test]
-fn test_signed_number() {
-    let inputs = ["-0", "-101"];
-
-    assert_inputs(inputs, |cursor, input| {
-        assert_eq!(cursor.advance_token(), Token::new(Minus, 1));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(Number, input[1..].len().try_into().unwrap())
-        );
-    });
+        assert_eq!(lexer.next_token(), Token::new(Number, input.len()));
+        assert_eq!(lexer.next_token(), Token::new(EOF, 0));
+    }
 }
 
 #[test]
 fn test_arithmetic() {
-    let input = "0 + 11 - 222 * 3333 / 44444";
+    let input = "(1 + (22 - 333) * 4444) / 55555";
     let expects = [
+        (LParen, 1),
         (Number, 1),
         (Plus, 1),
+        (LParen, 1),
         (Number, 2),
         (Minus, 1),
         (Number, 3),
+        (RParen, 1),
         (Asterisk, 1),
         (Number, 4),
+        (RParen, 1),
         (Slash, 1),
         (Number, 5),
+        (EOF, 0),
     ];
+    let mut lexer = Lexer::new(input);
 
-    assert_tokens(input, expects);
-}
-
-#[test]
-fn test_condition() {
-    let tests = [
-        ("10==10", Eq),
-        ("10!=10", Ne),
-        ("10<10", Lt),
-        ("10<=10", Le),
-        ("10>10", Gt),
-        ("10>=10", Ge),
-    ];
-
-    for (input, kind) in tests {
-        let mut cursor = Cursor::new(input);
-
-        assert_eq!(cursor.advance_token(), Token::new(Number, 2));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(kind, (input.len() - 4).try_into().unwrap())
-        );
-        assert_eq!(cursor.advance_token(), Token::new(Number, 2));
+    for (kind, len) in expects {
+        assert_eq!(lexer.next_token(), Token::new(kind, len));
     }
 }
 
 #[test]
-fn test_parenthesis() {
-    let input = "((10+1)*3+1)/20";
+fn test_reserved() {
+    let input = "! = == != < <= > >=";
     let expects = [
-        (LParen, 1),
-        (LParen, 1),
-        (Number, 2),
-        (Plus, 1),
-        (Number, 1),
-        (RParen, 1),
-        (Asterisk, 1),
-        (Number, 1),
-        (Plus, 1),
-        (Number, 1),
-        (RParen, 1),
-        (Slash, 1),
-        (Number, 2),
+        (Bang, 1),
+        (Assign, 1),
+        (Eq, 2),
+        (Ne, 2),
+        (Lt, 1),
+        (Le, 2),
+        (Gt, 1),
+        (Ge, 2),
+        (EOF, 0),
     ];
+    let mut lexer = Lexer::new(input);
 
-    assert_tokens(input, expects);
-}
-
-#[test]
-fn test_ident() {
-    let input = r#"
-SIZE = 10;
-lhs = 10; 
-rhs = 20; 
-_result = lhs + rhs;
-"#;
-    let expects = [
-        (Ident, 4),
-        (Assign, 1),
-        (Number, 2),
-        (SemiColon, 1),
-        (Ident, 3),
-        (Assign, 1),
-        (Number, 2),
-        (SemiColon, 1),
-        (Ident, 3),
-        (Assign, 1),
-        (Number, 2),
-        (SemiColon, 1),
-        (Ident, 7),
-        (Assign, 1),
-        (Ident, 3),
-        (Plus, 1),
-        (Ident, 3),
-        (SemiColon, 1),
-    ];
-
-    assert_tokens(input, expects);
+    for (kind, len) in expects {
+        assert_eq!(lexer.next_token(), Token::new(kind, len));
+    }
 }

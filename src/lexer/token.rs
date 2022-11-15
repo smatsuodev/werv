@@ -1,17 +1,25 @@
 #[derive(Debug, PartialEq)]
 pub struct Token {
     kind: TokenKind,
-    len: u32,
+    len: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, len: u32) -> Token {
+    pub fn new(kind: TokenKind, len: usize) -> Token {
         Token { kind, len }
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
+    /// 下記以外のトークン
+    Unknown,
+    /// 入力の終わり
+    EOF,
+
+    /// 数字
+    Number,
+
     /// +
     Plus,
     /// -
@@ -20,6 +28,9 @@ pub enum TokenKind {
     Asterisk,
     /// /
     Slash,
+
+    /// !
+    Bang,
 
     /// =
     Assign,
@@ -37,25 +48,8 @@ pub enum TokenKind {
     /// >=
     Ge,
 
-    /// デリミタ
-    SemiColon,
-    Comma,
-
     /// (
     LParen,
     /// )
     RParen,
-
-    /// 数字
-    Number,
-
-    /// 識別子
-    /// ( [a-z] | [A-Z] | "_" )+
-    Ident,
-
-    /// 上記以外のトークン
-    Unknown,
-
-    /// 入力終了
-    Eof,
 }
