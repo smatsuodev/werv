@@ -34,6 +34,8 @@ pub enum TokenKind {
 
     /// =
     Assign,
+    /// =>
+    Arrow,
 
     /// ==
     Eq,

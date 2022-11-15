@@ -42,10 +42,11 @@ fn test_arithmetic() {
 
 #[test]
 fn test_reserved() {
-    let input = "! = == != < <= > >=";
+    let input = "! = => == != < <= > >=";
     let expects = [
         (Bang, 1),
         (Assign, 1),
+        (Arrow, 2),
         (Eq, 2),
         (Ne, 2),
         (Lt, 1),
