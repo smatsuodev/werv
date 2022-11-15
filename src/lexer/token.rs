@@ -19,6 +19,8 @@ pub enum TokenKind {
 
     /// 数字
     Number,
+    /// 識別子
+    Ident,
 
     /// +
     Plus,
@@ -54,4 +56,8 @@ pub enum TokenKind {
     LParen,
     /// )
     RParen,
+    /// ,
+    Comma,
+    /// 改行
+    NewLine,
 }

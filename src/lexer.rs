@@ -7,6 +7,10 @@ use std::str::Chars;
 
 const EOF_CHAR: char = '\0';
 
+fn is_newline(ch: char) -> bool {
+    ch == '\n'
+}
+
 pub struct Lexer<'a> {
     chars: Chars<'a>,
     len_remaining: usize,
@@ -66,7 +70,7 @@ impl Lexer<'_> {
 
     /// 空白を無視する
     fn eat_whitespace(&mut self) {
-        self.eat_while(|c| c.is_whitespace());
+        self.eat_while(|c| c.is_whitespace() && !is_newline(c));
     }
 
     /// 次の文字が`ch`なら文字を1文字読み進めて真を返す
@@ -106,10 +110,17 @@ impl Lexer<'_> {
             '>' => TokenKind::Gt,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
+            ',' => TokenKind::Comma,
+            c if is_newline(c) => TokenKind::NewLine,
             c if c.is_digit(10) => {
                 self.eat_while(|c| c.is_digit(10));
 
                 return Token::new(TokenKind::Number, self.pos_within_token());
+            }
+            c if c.is_ascii_alphabetic() || c == '_' => {
+                self.eat_while(|c| c.is_ascii_alphabetic() || c.is_digit(10) || c == '_');
+
+                return Token::new(TokenKind::Ident, self.pos_within_token());
             }
             _ => TokenKind::Unknown,
         };

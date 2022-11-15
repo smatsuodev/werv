@@ -61,3 +61,51 @@ fn test_reserved() {
         assert_eq!(lexer.next_token(), Token::new(kind, len));
     }
 }
+
+#[test]
+fn test_definition() {
+    let input = r#"
+foo = 10
+
+add(a, b) = a + b
+
+add_foo(n) = add(n, foo)
+"#;
+    let expects = [
+        (NewLine, 1),
+        (Ident, 3),
+        (Assign, 1),
+        (Number, 2),
+        (NewLine, 1),
+        (NewLine, 1),
+        (Ident, 3),
+        (LParen, 1),
+        (Ident, 1),
+        (Comma, 1),
+        (Ident, 1),
+        (RParen, 1),
+        (Assign, 1),
+        (Ident, 1),
+        (Plus, 1),
+        (Ident, 1),
+        (NewLine, 1),
+        (NewLine, 1),
+        (Ident, 7),
+        (LParen, 1),
+        (Ident, 1),
+        (RParen, 1),
+        (Assign, 1),
+        (Ident, 3),
+        (LParen, 1),
+        (Ident, 1),
+        (Comma, 1),
+        (Ident, 3),
+        (RParen, 1),
+        (NewLine, 1),
+    ];
+    let mut lexer = Lexer::new(input);
+
+    for (kind, len) in expects {
+        assert_eq!(lexer.next_token(), Token::new(kind, len));
+    }
+}
