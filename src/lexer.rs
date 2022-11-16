@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test;
-mod token;
+pub mod token;
 
 use self::token::{Token, TokenKind};
-use std::str::Chars;
+use std::{str::Chars, vec::IntoIter};
 
 const EOF_CHAR: char = '\0';
 
@@ -11,9 +11,10 @@ fn is_newline(ch: char) -> bool {
     ch == '\n'
 }
 
+#[derive(Clone)]
 pub struct Lexer<'a> {
-    chars: Chars<'a>,
-    len_remaining: usize,
+    pub chars: Chars<'a>,
+    pub len_remaining: usize,
 }
 
 impl Lexer<'_> {
@@ -22,6 +23,23 @@ impl Lexer<'_> {
             chars: input.chars(),
             len_remaining: input.len(),
         }
+    }
+
+    pub fn tokenize(&mut self) -> IntoIter<Token> {
+        let mut result = Vec::new();
+
+        loop {
+            let token = self.next_token();
+            let is_eof = token.kind == TokenKind::EOF;
+
+            result.push(token);
+
+            if is_eof {
+                break;
+            }
+        }
+
+        result.into_iter()
     }
 
     /// 1文字進める

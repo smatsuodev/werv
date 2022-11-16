@@ -1,7 +1,7 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    kind: TokenKind,
-    len: usize,
+    pub kind: TokenKind,
+    pub len: usize,
 }
 
 impl Token {
@@ -10,7 +10,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     /// 下記以外のトークン
     Unknown,
