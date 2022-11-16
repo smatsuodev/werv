@@ -5,6 +5,7 @@ pub enum Node {
         lhs: Box<Node>,
         rhs: Box<Node>,
     },
+    Ident(String),
     Integer(isize),
 }
 

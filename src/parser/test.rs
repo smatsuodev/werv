@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use super::{
     ast::{ExprKind::*, Node::*},
     Parser,
@@ -5,7 +7,7 @@ use super::{
 
 #[test]
 fn parse_expr() {
-    let input = "(1 + (22 - (-333)) * -4444) / 55555";
+    let input = "(1 + (22 - (-333)) * -4444) / constant";
     let mut parser = Parser::new(input);
 
     assert_eq!(
@@ -33,7 +35,7 @@ fn parse_expr() {
                     })
                 })
             }),
-            rhs: Box::new(Integer(55555))
+            rhs: Box::new(Ident("constant".to_string()))
         })
     )
 }
@@ -60,5 +62,16 @@ fn test_comparison() {
                 rhs: Box::new(Integer(10))
             })
         )
+    }
+}
+
+#[test]
+fn test_ident() {
+    let tests = ["abc", "ABC012", "_"];
+
+    for input in tests {
+        let mut parser = Parser::new(input);
+
+        assert_eq!(parser.parse().unwrap(), Box::new(Ident(input.to_string())));
     }
 }

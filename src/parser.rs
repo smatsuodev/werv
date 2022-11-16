@@ -193,7 +193,7 @@ impl Parser<'_> {
         }
     }
 
-    /// primary = '(' expr ')' | number
+    /// primary = '(' expr ')' | number | ident
     fn primary(&mut self) -> PResult {
         if self.consume(TokenKind::LParen) {
             let node = self.expr()?;
@@ -203,10 +203,16 @@ impl Parser<'_> {
             return Ok(node);
         }
 
-        let value = self.token_literal().parse::<isize>().or(Err(()))?;
+        let literal = self.token_literal().to_string();
 
-        self.expect(TokenKind::Number)?;
+        if self.consume(TokenKind::Number) {
+            let value = literal.parse::<isize>().or(Err(()))?;
 
-        Ok(Box::new(Node::Integer(value)))
+            return Ok(Box::new(Node::Integer(value)));
+        }
+
+        self.expect(TokenKind::Ident)?;
+
+        return Ok(Box::new(Node::Ident(literal.to_string())));
     }
 }
