@@ -5,7 +5,7 @@ use super::{
 
 #[test]
 fn parse_expr() {
-    let input = "(1 + (22 - 333) * 4444) / 55555";
+    let input = "(1 + (22 - (-333)) * -4444) / 55555";
     let mut parser = Parser::new(input);
 
     assert_eq!(
@@ -20,12 +20,45 @@ fn parse_expr() {
                     lhs: Box::new(Expr {
                         kind: Sub,
                         lhs: Box::new(Integer(22)),
-                        rhs: Box::new(Integer(333))
+                        rhs: Box::new(Expr {
+                            kind: Sub,
+                            lhs: Box::new(Integer(0)),
+                            rhs: Box::new(Integer(333))
+                        })
                     }),
-                    rhs: Box::new(Integer(4444))
+                    rhs: Box::new(Expr {
+                        kind: Sub,
+                        lhs: Box::new(Integer(0)),
+                        rhs: Box::new(Integer(4444))
+                    })
                 })
             }),
             rhs: Box::new(Integer(55555))
         })
     )
+}
+
+#[test]
+fn test_comparison() {
+    let tests = [
+        ("10 == 10", Eq),
+        ("10 != 10", Ne),
+        ("10 < 10", Lt),
+        ("10 <= 10", Le),
+        ("10 > 10", Gt),
+        ("10 >= 10", Ge),
+    ];
+
+    for (input, kind) in tests {
+        let mut parser = Parser::new(input);
+
+        assert_eq!(
+            parser.parse().unwrap(),
+            Box::new(Expr {
+                kind,
+                lhs: Box::new(Integer(10)),
+                rhs: Box::new(Integer(10))
+            })
+        )
+    }
 }

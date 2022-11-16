@@ -7,7 +7,6 @@ use crate::lexer::{
     token::{Token, TokenKind},
     Lexer,
 };
-use std::vec::IntoIter;
 
 type PResult = Result<Box<Node>, ()>;
 
@@ -66,7 +65,69 @@ impl Parser<'_> {
 
     /// expr = add
     fn expr(&mut self) -> PResult {
-        self.add()
+        self.equality()
+    }
+
+    /// equality = relational ( '==' relational | '!=' relational )*
+    fn equality(&mut self) -> PResult {
+        let mut node = self.relational()?;
+
+        loop {
+            if self.consume(TokenKind::Eq) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Eq,
+                    lhs: node,
+                    rhs: self.relational()?,
+                })
+            } else if self.consume(TokenKind::Ne) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Ne,
+                    lhs: node,
+                    rhs: self.relational()?,
+                })
+            } else {
+                break;
+            }
+        }
+
+        Ok(node)
+    }
+
+    /// relational = add ( '<' add | '<=' add | '>' add | '>=' add )
+    fn relational(&mut self) -> PResult {
+        let mut node = self.add()?;
+
+        loop {
+            if self.consume(TokenKind::Lt) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Lt,
+                    lhs: node,
+                    rhs: self.add()?,
+                })
+            } else if self.consume(TokenKind::Le) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Le,
+                    lhs: node,
+                    rhs: self.add()?,
+                })
+            } else if self.consume(TokenKind::Gt) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Gt,
+                    lhs: node,
+                    rhs: self.add()?,
+                })
+            } else if self.consume(TokenKind::Ge) {
+                node = Box::new(Node::Expr {
+                    kind: ExprKind::Ge,
+                    lhs: node,
+                    rhs: self.add()?,
+                })
+            } else {
+                break;
+            }
+        }
+
+        Ok(node)
     }
 
     /// add = mul ( '+' mul | '-' mul )*
