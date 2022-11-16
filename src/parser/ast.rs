@@ -4,6 +4,11 @@ pub enum Node {
         name: Box<Node>,
         expr: Box<Node>,
     },
+    Def {
+        name: Box<Node>,
+        parameters: Vec<Box<Node>>,
+        body: Vec<Box<Node>>,
+    },
     Expr {
         kind: ExprKind,
         lhs: Box<Node>,

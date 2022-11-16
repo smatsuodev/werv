@@ -84,6 +84,8 @@ a = 10
 a
 b = a + 10
 b + a
+
+add(l, r) = l + r
 "#;
     let expected = [
         Assign {
@@ -103,6 +105,18 @@ b + a
             kind: Add,
             lhs: Box::new(Ident("b".to_string())),
             rhs: Box::new(Ident("a".to_string())),
+        },
+        Def {
+            name: Box::new(Ident("add".to_string())),
+            parameters: vec![
+                Box::new(Ident("l".to_string())),
+                Box::new(Ident("r".to_string())),
+            ],
+            body: vec![Box::new(Expr {
+                kind: Add,
+                lhs: Box::new(Ident("l".to_string())),
+                rhs: Box::new(Ident("r".to_string())),
+            })],
         },
     ];
     let stmts = Parser::new(input).parse().unwrap();

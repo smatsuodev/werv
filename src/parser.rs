@@ -8,7 +8,8 @@ use crate::lexer::{
     Lexer,
 };
 
-type PResult = Result<Box<Node>, ()>;
+type PError = ();
+type PResult = Result<Box<Node>, PError>;
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
@@ -53,8 +54,16 @@ impl Parser<'_> {
         &self.lexer.chars.as_str()[whitespace_len..len_eaten]
     }
 
+    fn peek(&mut self, kind: TokenKind) -> bool {
+        self.first().kind == kind
+    }
+
+    fn peek_second(&mut self, kind: TokenKind) -> bool {
+        self.second().kind == kind
+    }
+
     fn consume(&mut self, kind: TokenKind) -> bool {
-        if self.first().kind != kind {
+        if !self.peek(kind) {
             return false;
         }
 
@@ -63,15 +72,15 @@ impl Parser<'_> {
         true
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Result<Token, ()> {
-        if self.first().kind != kind {
+    fn expect(&mut self, kind: TokenKind) -> Result<Token, PError> {
+        if !self.peek(kind) {
             return Err(());
         }
 
         Ok(self.bump())
     }
 
-    fn expect_ident(&mut self) -> Result<String, ()> {
+    fn expect_ident(&mut self) -> Result<String, PError> {
         let value = self.token_literal().to_string();
 
         self.expect(TokenKind::Ident)?;
@@ -83,7 +92,7 @@ impl Parser<'_> {
         while self.consume(TokenKind::NewLine) {}
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Box<Node>>, ()> {
+    pub fn parse(&mut self) -> Result<Vec<Box<Node>>, PError> {
         let mut statements = Vec::new();
 
         while !self.is_eof() {
@@ -98,16 +107,20 @@ impl Parser<'_> {
         Ok(statements)
     }
 
-    /// statement = assign | expr
+    /// statement = assign | def | expr
     fn statement(&mut self) -> PResult {
-        if self.second().kind == TokenKind::Assign {
-            self.assign()
-        } else {
-            self.expr()
+        if self.peek(TokenKind::Ident) {
+            if self.peek_second(TokenKind::Assign) {
+                return self.assign();
+            } else if self.peek_second(TokenKind::LParen) {
+                return self.def();
+            }
         }
+
+        self.expr()
     }
 
-    /// assign = name '=' expr
+    /// assign = ident '=' expr
     fn assign(&mut self) -> PResult {
         let name = Box::new(Node::Ident(self.expect_ident()?));
 
@@ -116,6 +129,49 @@ impl Parser<'_> {
         let expr = self.expr()?;
 
         Ok(Box::new(Node::Assign { name, expr }))
+    }
+
+    /// def = ident parameters '=' expr
+    fn def(&mut self) -> PResult {
+        let name = Box::new(Node::Ident(self.expect_ident()?));
+
+        let parameters = self.def_parameters()?;
+
+        self.expect(TokenKind::Assign)?;
+
+        let body = vec![self.expr()?];
+
+        Ok(Box::new(Node::Def {
+            name,
+            parameters,
+            body,
+        }))
+    }
+
+    /// def_parameters = '(' ident,* ')'
+    fn def_parameters(&mut self) -> Result<Vec<Box<Node>>, PError> {
+        self.expect(TokenKind::LParen)?;
+
+        let mut parameters = Vec::new();
+
+        loop {
+            let literal = self.expect_ident()?;
+
+            if self.is_eof() {
+                return Err(());
+            }
+
+            if self.consume(TokenKind::RParen) {
+                parameters.push(Box::new(Node::Ident(literal)));
+
+                break;
+            }
+
+            self.expect(TokenKind::Comma)?;
+            parameters.push(Box::new(Node::Ident(literal)));
+        }
+
+        Ok(parameters)
     }
 
     /// expr = equality
