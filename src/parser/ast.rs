@@ -1,5 +1,9 @@
 #[derive(Debug, PartialEq)]
 pub enum Node {
+    Assign {
+        name: Box<Node>,
+        expr: Box<Node>,
+    },
     Expr {
         kind: ExprKind,
         lhs: Box<Node>,

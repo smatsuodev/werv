@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use super::{
     ast::{ExprKind::*, Node::*},
     Parser,
@@ -12,7 +10,7 @@ fn parse_expr() {
 
     assert_eq!(
         parser.parse().unwrap(),
-        Box::new(Expr {
+        vec![Box::new(Expr {
             kind: Div,
             lhs: Box::new(Expr {
                 kind: Add,
@@ -36,7 +34,7 @@ fn parse_expr() {
                 })
             }),
             rhs: Box::new(Ident("constant".to_string()))
-        })
+        })]
     )
 }
 
@@ -56,11 +54,11 @@ fn test_comparison() {
 
         assert_eq!(
             parser.parse().unwrap(),
-            Box::new(Expr {
+            vec![Box::new(Expr {
                 kind,
                 lhs: Box::new(Integer(10)),
                 rhs: Box::new(Integer(10))
-            })
+            })]
         )
     }
 }
@@ -72,6 +70,42 @@ fn test_ident() {
     for input in tests {
         let mut parser = Parser::new(input);
 
-        assert_eq!(parser.parse().unwrap(), Box::new(Ident(input.to_string())));
+        assert_eq!(
+            parser.parse().unwrap(),
+            vec![Box::new(Ident(input.to_string()))]
+        );
     }
+}
+
+#[test]
+fn test_assignment() {
+    let input = r#"
+a = 10
+a
+b = a + 10
+b + a
+"#;
+    let expected = [
+        Assign {
+            name: Box::new(Ident("a".to_string())),
+            expr: Box::new(Integer(10)),
+        },
+        Ident("a".to_string()),
+        Assign {
+            name: Box::new(Ident("b".to_string())),
+            expr: Box::new(Expr {
+                kind: Add,
+                lhs: Box::new(Ident("a".to_string())),
+                rhs: Box::new(Integer(10)),
+            }),
+        },
+        Expr {
+            kind: Add,
+            lhs: Box::new(Ident("b".to_string())),
+            rhs: Box::new(Ident("a".to_string())),
+        },
+    ];
+    let stmts = Parser::new(input).parse().unwrap();
+
+    assert_eq!(stmts, Vec::from(expected.map(|n| Box::new(n))));
 }

@@ -29,6 +29,18 @@ impl Parser<'_> {
         self.lexer.clone().next_token()
     }
 
+    fn second(&self) -> Token {
+        let mut lexer = self.lexer.clone();
+
+        lexer.next_token();
+
+        lexer.next_token()
+    }
+
+    fn is_eof(&self) -> bool {
+        self.first().kind == TokenKind::EOF
+    }
+
     fn token_literal(&self) -> &str {
         let mut lexer = self.lexer.clone();
         let len_remaining = lexer.chars.as_str().len();
@@ -59,11 +71,54 @@ impl Parser<'_> {
         Ok(self.bump())
     }
 
-    pub fn parse(&mut self) -> PResult {
-        self.expr()
+    fn expect_ident(&mut self) -> Result<String, ()> {
+        let value = self.token_literal().to_string();
+
+        self.expect(TokenKind::Ident)?;
+
+        Ok(value)
     }
 
-    /// expr = add
+    fn eat_newlines(&mut self) {
+        while self.consume(TokenKind::NewLine) {}
+    }
+
+    pub fn parse(&mut self) -> Result<Vec<Box<Node>>, ()> {
+        let mut statements = Vec::new();
+
+        while !self.is_eof() {
+            self.eat_newlines();
+            statements.push(self.statement()?);
+
+            if !self.is_eof() {
+                self.expect(TokenKind::NewLine)?;
+            }
+        }
+
+        Ok(statements)
+    }
+
+    /// statement = assign | expr
+    fn statement(&mut self) -> PResult {
+        if self.second().kind == TokenKind::Assign {
+            self.assign()
+        } else {
+            self.expr()
+        }
+    }
+
+    /// assign = name '=' expr
+    fn assign(&mut self) -> PResult {
+        let name = Box::new(Node::Ident(self.expect_ident()?));
+
+        self.expect(TokenKind::Assign)?;
+
+        let expr = self.expr()?;
+
+        Ok(Box::new(Node::Assign { name, expr }))
+    }
+
+    /// expr = equality
     fn expr(&mut self) -> PResult {
         self.equality()
     }
