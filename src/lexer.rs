@@ -27,6 +27,10 @@ impl Lexer {
         let kind = match c {
             '=' => TokenKind::Assign,
             ';' => TokenKind::SemiColon,
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '*' => TokenKind::Asterisk,
+            '/' => TokenKind::Slash,
             '\0' => TokenKind::EOF,
             c if self.is_number() => {
                 return Token::new(TokenKind::Number, self.read_number());

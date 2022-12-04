@@ -4,6 +4,14 @@ pub enum TokenKind {
     Assign,
     /// ;
     SemiColon,
+    /// +
+    Plus,
+    /// -
+    Minus,
+    /// *
+    Asterisk,
+    /// /
+    Slash,
 
     // キーワード
     Let,

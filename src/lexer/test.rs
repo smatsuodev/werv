@@ -3,12 +3,20 @@ use crate::token::{Token, TokenKind::*};
 
 #[test]
 fn next_token_test() {
-    let input = "let _aA10 = 10;";
+    let input = "let _aA10 = 1 + 2 - 3 * 4 / 5;";
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
         (Assign, "="),
-        (Number, "10"),
+        (Number, "1"),
+        (Plus, "+"),
+        (Number, "2"),
+        (Minus, "-"),
+        (Number, "3"),
+        (Asterisk, "*"),
+        (Number, "4"),
+        (Slash, "/"),
+        (Number, "5"),
         (SemiColon, ";"),
         (EOF, "\0"),
     ];
