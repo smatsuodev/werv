@@ -1,150 +1,95 @@
+use crate::token::{Token, TokenKind};
 #[cfg(test)]
 mod test;
-pub mod token;
 
-use self::token::{Token, TokenKind};
-use std::{str::Chars, vec::IntoIter};
-
-const EOF_CHAR: char = '\0';
-
-fn is_newline(ch: char) -> bool {
-    ch == '\n'
+pub struct Lexer {
+    input: String,
+    position: usize,
+    next_position: usize,
+    ch: char,
 }
-
-#[derive(Clone)]
-pub struct Lexer<'a> {
-    pub chars: Chars<'a>,
-    pub len_remaining: usize,
-}
-
-impl Lexer<'_> {
-    pub fn new(input: &str) -> Lexer {
-        Lexer {
-            chars: input.chars(),
-            len_remaining: input.len(),
-        }
+impl Lexer {
+    pub fn new(input: String) -> Lexer {
+        let mut l = Lexer {
+            input,
+            position: 0,
+            next_position: 0,
+            ch: '\0',
+        };
+        l.read_char();
+        l
     }
 
-    pub fn tokenize(&mut self) -> IntoIter<Token> {
-        let mut result = Vec::new();
-
-        loop {
-            let token = self.next_token();
-            let is_eof = token.kind == TokenKind::EOF;
-
-            result.push(token);
-
-            if is_eof {
-                break;
-            }
-        }
-
-        result.into_iter()
-    }
-
-    /// 1文字進める
-    fn bump(&mut self) {
-        self.chars.next();
-    }
-
-    /// いま着目している文字を返す
-    fn first(&self) -> char {
-        self.chars.clone().next().unwrap_or(EOF_CHAR)
-    }
-
-    /// いま着目している文字を返す
-    fn second(&self) -> char {
-        let mut chars = self.chars.clone();
-
-        // chars.nth(1)よりもchars.next()を2回呼ぶ方がパフォーマンスがいいらしい
-        // 参考: https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer/src/cursor.rs#L52
-        chars.next();
-
-        chars.next().unwrap_or(EOF_CHAR)
-    }
-
-    /// 入力文字列を全てトークナイズし終わったなら真を、
-    /// そうでないなら偽を返す
-    fn is_eof(&self) -> bool {
-        self.chars.as_str().is_empty()
-    }
-
-    /// 現在のトークンが占める文字の個数を返す
-    fn pos_within_token(&self) -> usize {
-        self.len_remaining - self.chars.as_str().len()
-    }
-
-    /// 入力文字列の残り文字数を現在のトークンの位置でリセットする
-    fn reset_pos_within_token(&mut self) {
-        self.len_remaining = self.chars.as_str().len()
-    }
-
-    /// 条件が真の間、文字を読み進める
-    fn eat_while(&mut self, cond: impl Fn(char) -> bool) {
-        while !self.is_eof() && cond(self.first()) {
-            self.bump();
-        }
-    }
-
-    /// 空白を無視する
-    fn eat_whitespace(&mut self) {
-        self.eat_while(|c| c.is_whitespace() && !is_newline(c));
-    }
-
-    /// 次の文字が`ch`なら文字を1文字読み進めて真を返す
-    /// それ以外なら偽を返す
-    fn is_peek(&mut self, ch: char) -> bool {
-        if self.second() == ch {
-            self.bump();
-
-            true
-        } else {
-            false
-        }
-    }
-
-    /// 次のトークンを返す
     pub fn next_token(&mut self) -> Token {
-        if self.is_eof() {
-            return Token::new(TokenKind::EOF, 0);
-        }
+        self.skip_whitespace();
 
-        self.eat_whitespace();
-        self.reset_pos_within_token();
-
-        let kind = match self.first() {
-            '+' => TokenKind::Plus,
-            '-' => TokenKind::Minus,
-            '*' => TokenKind::Asterisk,
-            '/' => TokenKind::Slash,
-            '!' if self.is_peek('=') => TokenKind::Ne,
-            '!' => TokenKind::Bang,
-            '=' if self.is_peek('>') => TokenKind::Arrow,
-            '=' if self.is_peek('=') => TokenKind::Eq,
+        let c = self.ch;
+        let kind = match c {
             '=' => TokenKind::Assign,
-            '<' if self.is_peek('=') => TokenKind::Le,
-            '<' => TokenKind::Lt,
-            '>' if self.is_peek('=') => TokenKind::Ge,
-            '>' => TokenKind::Gt,
-            '(' => TokenKind::LParen,
-            ')' => TokenKind::RParen,
-            ',' => TokenKind::Comma,
-            c if is_newline(c) => TokenKind::NewLine,
-            c if c.is_digit(10) => {
-                self.eat_while(|c| c.is_digit(10));
-
-                return Token::new(TokenKind::Number, self.pos_within_token());
+            ';' => TokenKind::SemiColon,
+            '\0' => TokenKind::EOF,
+            c if self.is_number() => {
+                return Token::new(TokenKind::Number, self.read_number());
             }
-            c if c.is_ascii_alphabetic() || c == '_' => {
-                self.eat_while(|c| c.is_ascii_alphabetic() || c.is_digit(10) || c == '_');
+            c if self.is_ident_head() => {
+                let literal = self.read_ident();
 
-                return Token::new(TokenKind::Ident, self.pos_within_token());
+                return Token::new(TokenKind::lookup_kind(&literal), literal);
             }
             _ => TokenKind::Unknown,
         };
 
-        self.bump();
+        self.read_char();
+        Token::new(kind, c.to_string())
+    }
 
-        Token::new(kind, self.pos_within_token())
+    fn skip_whitespace(&mut self) {
+        while self.is_whitespace() {
+            self.read_char();
+        }
+    }
+
+    fn is_whitespace(&self) -> bool {
+        let c = self.ch;
+        c == ' ' || c == '\t' || c == '\r' || c == '\n'
+    }
+
+    fn read_ident(&mut self) -> String {
+        let pos = self.position;
+        while self.is_ident() {
+            self.read_char();
+        }
+        self.input[pos..self.position].to_string()
+    }
+
+    fn is_ident(&self) -> bool {
+        self.is_ident_head() || self.is_number()
+    }
+
+    fn is_ident_head(&self) -> bool {
+        let c = self.ch;
+        'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_'
+    }
+
+    fn read_number(&mut self) -> String {
+        let pos = self.position;
+        while self.is_number() {
+            self.read_char();
+        }
+        self.input[pos..self.position].to_string()
+    }
+
+    fn is_number(&self) -> bool {
+        '0' <= self.ch && self.ch <= '9'
+    }
+
+    fn read_char(&mut self) {
+        if self.next_position >= self.input.len() {
+            self.ch = '\0';
+        } else {
+            self.ch = self.input.chars().nth(self.next_position).unwrap();
+        }
+        self.position = self.next_position;
+        self.next_position += 1;
     }
 }
