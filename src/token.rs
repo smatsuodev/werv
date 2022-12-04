@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     /// =
     Assign,
@@ -44,8 +44,13 @@ impl TokenKind {
         }
     }
 }
+impl Default for TokenKind {
+    fn default() -> Self {
+        TokenKind::Unknown
+    }
+}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct Token {
     kind: TokenKind,
     literal: String,
@@ -53,5 +58,11 @@ pub struct Token {
 impl Token {
     pub fn new(kind: TokenKind, literal: String) -> Token {
         Token { kind, literal }
+    }
+    pub fn kind(&self) -> TokenKind {
+        self.kind
+    }
+    pub fn literal(&self) -> String {
+        self.literal.clone()
     }
 }
