@@ -3,12 +3,12 @@ pub enum Node {
     Expression(Expression),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     LetStatement { name: Expression, value: Expression },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     BinaryExpr {
         kind: BinaryExprKind,
@@ -19,7 +19,7 @@ pub enum Expression {
     Integer(isize),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum BinaryExprKind {
     Add,
     Sub,

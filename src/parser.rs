@@ -1,5 +1,3 @@
-use std::collections::binary_heap;
-
 use crate::{
     ast::{BinaryExprKind::*, Expression, Expression::*, Statement, Statement::*},
     lexer::Lexer,
@@ -120,7 +118,7 @@ impl Parser {
             return Ok(expr);
         }
 
-        if self.is_peek(TokenKind::Ident) {
+        if self.is_cur(TokenKind::Ident) {
             return self.parse_ident();
         }
 
@@ -157,6 +155,10 @@ impl Parser {
 
         self.next_token();
         Ok(token)
+    }
+
+    fn is_cur(&self, kind: TokenKind) -> bool {
+        self.cur_token.kind() == kind
     }
 
     fn is_peek(&self, kind: TokenKind) -> bool {
