@@ -24,6 +24,7 @@ pub enum TokenKind {
     // キーワード
     Let,
     Fn,
+    Return,
 
     /// 識別子
     Ident,
@@ -38,6 +39,7 @@ impl TokenKind {
         match literal {
             "let" => TokenKind::Let,
             "fn" => TokenKind::Fn,
+            "return" => TokenKind::Return,
             _ => TokenKind::Ident,
         }
     }

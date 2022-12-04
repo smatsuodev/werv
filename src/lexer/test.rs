@@ -3,9 +3,12 @@ use crate::token::{Token, TokenKind::*};
 
 #[test]
 fn next_token_test() {
-    let input = "
+    let input = r"
 let _aA10 = 1 + 2 - 3 * 4 / 5; 
-fn fib(n) = fib(n-1) + fib(n-2);";
+fn fib(n) = fib(n-1) + fib(n-2);
+fn a() = {
+    return 0;
+};";
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
@@ -39,6 +42,17 @@ fn fib(n) = fib(n-1) + fib(n-2);";
         (Minus, "-"),
         (Number, "2"),
         (RParen, ")"),
+        (SemiColon, ";"),
+        (Fn, "fn"),
+        (Ident, "a"),
+        (LParen, "("),
+        (RParen, ")"),
+        (Assign, "="),
+        (LBrace, "{"),
+        (Return, "return"),
+        (Number, "0"),
+        (SemiColon, ";"),
+        (RBrace, "}"),
         (SemiColon, ";"),
         (EOF, "\0"),
     ];
