@@ -111,11 +111,8 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> PResult<Expression> {
-        if self.consume(TokenKind::LParen).is_ok() {
-            let expr = self.parse_expression()?;
-
-            self.consume(TokenKind::RParen)?;
-            return Ok(expr);
+        if self.is_cur(TokenKind::LParen) {
+            return self.parse_paren_expr();
         }
 
         if self.is_cur(TokenKind::Ident) {
@@ -123,6 +120,15 @@ impl Parser {
         }
 
         return self.parse_integer();
+    }
+
+    fn parse_paren_expr(&mut self) -> PResult<Expression> {
+        self.consume(TokenKind::LParen)?;
+
+        let expr = self.parse_expression()?;
+
+        self.consume(TokenKind::RParen)?;
+        return Ok(expr);
     }
 
     fn parse_integer(&mut self) -> PResult<Expression> {

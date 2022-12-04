@@ -175,6 +175,18 @@ fn parse_primary_test() {
 }
 
 #[test]
+fn parse_paren_expr_test() {
+    let input = ["(2 - 3)"];
+    let expect = [BinaryExpr {
+        kind: Sub,
+        lhs: Box::new(Integer(2)),
+        rhs: Box::new(Integer(3)),
+    }];
+
+    loop_test(input, expect, |p| p.parse_paren_expr().unwrap());
+}
+
+#[test]
 fn parse_integer_test() {
     let input = ["1234567890", "1", "2", "3", "4", "5"];
     let expect = [
