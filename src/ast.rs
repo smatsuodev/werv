@@ -10,6 +10,19 @@ pub enum Statement {
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
+    BinaryExpr {
+        kind: BinaryExprKind,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
+    },
     Ident(String),
     Integer(isize),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum BinaryExprKind {
+    Add,
+    Sub,
+    Mul,
+    Div,
 }

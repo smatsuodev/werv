@@ -1,5 +1,7 @@
+use std::collections::binary_heap;
+
 use crate::{
-    ast::{Expression, Expression::*, Statement, Statement::*},
+    ast::{BinaryExprKind::*, Expression, Expression::*, Statement, Statement::*},
     lexer::Lexer,
     token::{Token, TokenKind},
 };
@@ -59,6 +61,65 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> PResult<Expression> {
+        self.parse_add()
+    }
+
+    fn parse_add(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_mul()?;
+
+        loop {
+            if self.consume(TokenKind::Plus).is_ok() {
+                node = BinaryExpr {
+                    kind: Add,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_mul()?),
+                };
+            } else if self.consume(TokenKind::Minus).is_ok() {
+                node = BinaryExpr {
+                    kind: Sub,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_mul()?),
+                };
+            } else {
+                break;
+            }
+        }
+
+        Ok(node)
+    }
+
+    fn parse_mul(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_primary()?;
+
+        loop {
+            if self.consume(TokenKind::Asterisk).is_ok() {
+                node = BinaryExpr {
+                    kind: Mul,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_primary()?),
+                };
+            } else if self.consume(TokenKind::Slash).is_ok() {
+                node = BinaryExpr {
+                    kind: Div,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_primary()?),
+                };
+            } else {
+                break;
+            }
+        }
+
+        Ok(node)
+    }
+
+    fn parse_primary(&mut self) -> PResult<Expression> {
+        if self.consume(TokenKind::LParen).is_ok() {
+            let expr = self.parse_expression()?;
+
+            self.consume(TokenKind::RParen)?;
+            return Ok(expr);
+        }
+
         if self.is_peek(TokenKind::Ident) {
             return self.parse_ident();
         }
