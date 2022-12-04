@@ -31,6 +31,10 @@ impl Lexer {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
+            '(' => TokenKind::LParen,
+            ')' => TokenKind::RParen,
+            '{' => TokenKind::LBrace,
+            '}' => TokenKind::RBrace,
             '\0' => TokenKind::EOF,
             c if self.is_number() => {
                 return Token::new(TokenKind::Number, self.read_number());

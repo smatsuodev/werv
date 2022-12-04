@@ -12,9 +12,18 @@ pub enum TokenKind {
     Asterisk,
     /// /
     Slash,
+    /// (
+    LParen,
+    /// )
+    RParen,
+    /// {
+    LBrace,
+    /// }
+    RBrace,
 
     // キーワード
     Let,
+    Fn,
 
     /// 識別子
     Ident,
@@ -28,6 +37,7 @@ impl TokenKind {
     pub fn lookup_kind(literal: &str) -> TokenKind {
         match literal {
             "let" => TokenKind::Let,
+            "fn" => TokenKind::Fn,
             _ => TokenKind::Ident,
         }
     }
