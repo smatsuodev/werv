@@ -153,10 +153,44 @@ impl Parser {
         }
 
         if self.is_cur(TokenKind::Ident) {
+            if self.is_peek(TokenKind::LParen) {
+                return self.parse_call_expression();
+            }
+
             return self.parse_ident();
         }
 
         return self.parse_integer();
+    }
+
+    fn parse_call_expression(&mut self) -> PResult<Expression> {
+        let name = Box::new(self.parse_ident()?);
+        let args = self.parse_args()?;
+
+        Ok(CallExpr { name, args })
+    }
+
+    fn parse_args(&mut self) -> PResult<Vec<Expression>> {
+        self.consume(TokenKind::LParen)?;
+
+        let mut params = Vec::new();
+
+        if self.consume(TokenKind::RParen).is_ok() {
+            return Ok(params);
+        }
+
+        params.push(self.parse_expression()?);
+
+        while !self.consume(TokenKind::RParen).is_ok() {
+            if self.is_eof() {
+                return Err(());
+            }
+
+            self.consume(TokenKind::Comma)?;
+            params.push(self.parse_expression()?);
+        }
+
+        Ok(params)
     }
 
     fn parse_paren_expr(&mut self) -> PResult<Expression> {

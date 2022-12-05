@@ -18,6 +18,10 @@ pub enum Statement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    CallExpr {
+        name: Box<Expression>,
+        args: Vec<Expression>,
+    },
     BinaryExpr {
         kind: BinaryExprKind,
         lhs: Box<Expression>,
