@@ -8,7 +8,8 @@ let _aA10 = 1 + 2 - 3 * 4 / 5;
 fn fib(n) = fib(n-1) + fib(n-2);
 fn add(a, b) = {
     return a + b;
-};";
+};
+fn only_odd(n) = if n % 2 { n } else { 0 }; ";
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
@@ -57,6 +58,24 @@ fn add(a, b) = {
         (Plus, "+"),
         (Ident, "b"),
         (SemiColon, ";"),
+        (RBrace, "}"),
+        (SemiColon, ";"),
+        (Fn, "fn"),
+        (Ident, "only_odd"),
+        (LParen, "("),
+        (Ident, "n"),
+        (RParen, ")"),
+        (Assign, "="),
+        (If, "if"),
+        (Ident, "n"),
+        (Percent, "%"),
+        (Number, "2"),
+        (LBrace, "{"),
+        (Ident, "n"),
+        (RBrace, "}"),
+        (Else, "else"),
+        (LBrace, "{"),
+        (Number, "0"),
         (RBrace, "}"),
         (SemiColon, ";"),
         (EOF, "\0"),

@@ -32,6 +32,7 @@ impl Lexer {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
+            '%' => TokenKind::Percent,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
             '{' => TokenKind::LBrace,

@@ -14,6 +14,8 @@ pub enum TokenKind {
     Asterisk,
     /// /
     Slash,
+    /// %
+    Percent,
     /// (
     LParen,
     /// )
@@ -27,6 +29,10 @@ pub enum TokenKind {
     Let,
     Fn,
     Return,
+    If,
+    Else,
+    True,
+    False,
 
     /// 識別子
     Ident,
@@ -42,6 +48,10 @@ impl TokenKind {
             "let" => TokenKind::Let,
             "fn" => TokenKind::Fn,
             "return" => TokenKind::Return,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "true" => TokenKind::True,
+            "false" => TokenKind::False,
             _ => TokenKind::Ident,
         }
     }
