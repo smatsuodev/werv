@@ -14,11 +14,13 @@ pub enum Statement {
         params: Vec<Expression>,
         body: Expression,
     },
+    ReturnStatement(Expression),
     ExprStatement(Expression),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    BlockExpr(Vec<Statement>),
     CallExpr {
         name: Box<Expression>,
         args: Vec<Expression>,

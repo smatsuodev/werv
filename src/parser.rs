@@ -40,11 +40,20 @@ impl Parser {
         let stmt = match self.cur_token.kind() {
             TokenKind::Let => self.parse_let_statement()?,
             TokenKind::Fn => self.parse_fn_statement()?,
+            TokenKind::Return => self.parse_return_statement()?,
             _ => self.parse_expr_statement()?,
         };
 
         self.consume(TokenKind::SemiColon)?;
         Ok(stmt)
+    }
+
+    fn parse_return_statement(&mut self) -> PResult<Statement> {
+        self.consume(TokenKind::Return)?;
+
+        let expr = self.parse_expression()?;
+
+        Ok(ReturnStatement(expr))
     }
 
     fn parse_expr_statement(&mut self) -> PResult<Statement> {
@@ -101,7 +110,25 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> PResult<Expression> {
+        if self.is_cur(TokenKind::LBrace) {
+            return self.parse_block();
+        }
+
         self.parse_add()
+    }
+
+    fn parse_block(&mut self) -> PResult<Expression> {
+        self.consume(TokenKind::LBrace)?;
+
+        let mut stmts = Vec::new();
+
+        while !self.consume(TokenKind::RBrace).is_ok() {
+            let stmt = self.parse_statement()?;
+
+            stmts.push(stmt)
+        }
+
+        Ok(BlockExpr(stmts))
     }
 
     fn parse_add(&mut self) -> PResult<Expression> {
