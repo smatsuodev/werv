@@ -14,6 +14,7 @@ pub enum Statement {
         params: Vec<Expression>,
         body: Expression,
     },
+    ExprStatement(Expression),
 }
 
 #[derive(Debug, PartialEq, Clone)]

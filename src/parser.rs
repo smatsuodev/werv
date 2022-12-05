@@ -40,11 +40,16 @@ impl Parser {
         let stmt = match self.cur_token.kind() {
             TokenKind::Let => self.parse_let_statement()?,
             TokenKind::Fn => self.parse_fn_statement()?,
-            _ => return Err(()),
+            _ => self.parse_expr_statement()?,
         };
 
         self.consume(TokenKind::SemiColon)?;
         Ok(stmt)
+    }
+
+    fn parse_expr_statement(&mut self) -> PResult<Statement> {
+        let expr = self.parse_expression()?;
+        Ok(ExprStatement(expr))
     }
 
     fn parse_fn_statement(&mut self) -> PResult<Statement> {

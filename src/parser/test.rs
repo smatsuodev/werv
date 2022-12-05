@@ -26,6 +26,7 @@ let _ = 1 + (2 - 3) * 4 / 5;
 fn answer() = 42;
 fn calc(a, b, c, d, e) = (a + b - c) * d / e;
 fn fib(n) = add(fib(n-1), fib(n-2));
+print(fib(10)+10);
 "#];
     let expect = [vec![
         LetStatement {
@@ -109,6 +110,17 @@ fn fib(n) = add(fib(n-1), fib(n-2));
                 ],
             },
         },
+        ExprStatement(CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        }),
     ]];
 
     loop_test(input, expect, |p| p.parse().unwrap());
@@ -243,6 +255,7 @@ fn parse_expression_test() {
         "42",
         "(a + b - c) * d / e",
         "add(fib(n-1), fib(n-2))",
+        "print(fib(10)+10)",
     ];
     let expect = [
         Integer(1234567890),
@@ -302,6 +315,17 @@ fn parse_expression_test() {
                 },
             ],
         },
+        CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        },
     ];
 
     loop_test(input, expect, |p| p.parse_expression().unwrap());
@@ -316,6 +340,9 @@ fn parse_add_test() {
         "(a + b - c) * d / e",
         "n-1",
         "n-2",
+        "add(fib(n-1), fib(n-2))",
+        "print(fib(10)+10)",
+        "fib(10)+10",
     ];
     let expect = [
         Integer(1234567890),
@@ -364,6 +391,46 @@ fn parse_add_test() {
             lhs: Box::new(Ident("n".into())),
             rhs: Box::new(Integer(2)),
         },
+        CallExpr {
+            name: Box::new(Ident("add".into())),
+            args: vec![
+                CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![BinaryExpr {
+                        kind: Sub,
+                        lhs: Box::new(Ident("n".into())),
+                        rhs: Box::new(Integer(1)),
+                    }],
+                },
+                CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![BinaryExpr {
+                        kind: Sub,
+                        lhs: Box::new(Ident("n".into())),
+                        rhs: Box::new(Integer(2)),
+                    }],
+                },
+            ],
+        },
+        CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        },
+        BinaryExpr {
+            kind: Add,
+            lhs: Box::new(CallExpr {
+                name: Box::new(Ident("fib".into())),
+                args: vec![Integer(10)],
+            }),
+            rhs: Box::new(Integer(10)),
+        },
     ];
 
     loop_test(input, expect, |p| p.parse_add().unwrap());
@@ -371,7 +438,14 @@ fn parse_add_test() {
 
 #[test]
 fn parse_mul_test() {
-    let input = ["1234567890", "(2 - 3) * 4 / 5", "42", "(a + b - c) * d / e"];
+    let input = [
+        "1234567890",
+        "(2 - 3) * 4 / 5",
+        "42",
+        "(a + b - c) * d / e",
+        "print(fib(10)+10)",
+        "fib(10)",
+    ];
     let expect = [
         Integer(1234567890),
         BinaryExpr {
@@ -405,6 +479,21 @@ fn parse_mul_test() {
             }),
             rhs: Box::new(Ident("e".into())),
         },
+        CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        },
+        CallExpr {
+            name: Box::new(Ident("fib".into())),
+            args: vec![Integer(10)],
+        },
     ];
 
     loop_test(input, expect, |p| p.parse_mul().unwrap());
@@ -423,6 +512,7 @@ fn parse_primary_test() {
         "d",
         "e",
         "add(fib(n-1), fib(n-2))",
+        "print(fib(10)+10)",
     ];
     let expect = [
         Integer(1234567890),
@@ -467,6 +557,17 @@ fn parse_primary_test() {
                 },
             ],
         },
+        CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        },
     ];
 
     loop_test(input, expect, |p| p.parse_primary().unwrap());
@@ -474,10 +575,50 @@ fn parse_primary_test() {
 
 #[test]
 fn parse_call_expression_test() {
-    let input = ["add(fib(n-1), fib(n-2))"];
-    let expect = [CallExpr {
-        name: Box::new(Ident("add".into())),
-        args: vec![
+    let input = ["add(fib(n-1), fib(n-2))", "print(fib(10)+10)"];
+    let expect = [
+        CallExpr {
+            name: Box::new(Ident("add".into())),
+            args: vec![
+                CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![BinaryExpr {
+                        kind: Sub,
+                        lhs: Box::new(Ident("n".into())),
+                        rhs: Box::new(Integer(1)),
+                    }],
+                },
+                CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![BinaryExpr {
+                        kind: Sub,
+                        lhs: Box::new(Ident("n".into())),
+                        rhs: Box::new(Integer(2)),
+                    }],
+                },
+            ],
+        },
+        CallExpr {
+            name: Box::new(Ident("print".into())),
+            args: vec![BinaryExpr {
+                kind: Add,
+                lhs: Box::new(CallExpr {
+                    name: Box::new(Ident("fib".into())),
+                    args: vec![Integer(10)],
+                }),
+                rhs: Box::new(Integer(10)),
+            }],
+        },
+    ];
+
+    loop_test(input, expect, |p| p.parse_call_expression().unwrap());
+}
+
+#[test]
+fn parse_args_test() {
+    let input = ["(fib(n-1), fib(n-2))", "(fib(10)+10)", "(10)"];
+    let expect = [
+        vec![
             CallExpr {
                 name: Box::new(Ident("fib".into())),
                 args: vec![BinaryExpr {
@@ -495,32 +636,16 @@ fn parse_call_expression_test() {
                 }],
             },
         ],
-    }];
-
-    loop_test(input, expect, |p| p.parse_call_expression().unwrap());
-}
-
-#[test]
-fn parse_args_test() {
-    let input = ["(fib(n-1), fib(n-2))"];
-    let expect = [vec![
-        CallExpr {
-            name: Box::new(Ident("fib".into())),
-            args: vec![BinaryExpr {
-                kind: Sub,
-                lhs: Box::new(Ident("n".into())),
-                rhs: Box::new(Integer(1)),
-            }],
-        },
-        CallExpr {
-            name: Box::new(Ident("fib".into())),
-            args: vec![BinaryExpr {
-                kind: Sub,
-                lhs: Box::new(Ident("n".into())),
-                rhs: Box::new(Integer(2)),
-            }],
-        },
-    ]];
+        vec![BinaryExpr {
+            kind: Add,
+            lhs: Box::new(CallExpr {
+                name: Box::new(Ident("fib".into())),
+                args: vec![Integer(10)],
+            }),
+            rhs: Box::new(Integer(10)),
+        }],
+        vec![Integer(10)],
+    ];
 
     loop_test(input, expect, |p| p.parse_args().unwrap());
 }
@@ -550,7 +675,7 @@ fn parse_paren_expr_test() {
 
 #[test]
 fn parse_integer_test() {
-    let input = ["1234567890", "1", "2", "3", "4", "5", "42"];
+    let input = ["1234567890", "1", "2", "3", "4", "5", "42", "10"];
     let expect = [
         Integer(1234567890),
         Integer(1),
@@ -559,6 +684,7 @@ fn parse_integer_test() {
         Integer(4),
         Integer(5),
         Integer(42),
+        Integer(10),
     ];
 
     loop_test(input, expect, |p| p.parse_integer().unwrap());
@@ -567,7 +693,7 @@ fn parse_integer_test() {
 #[test]
 fn parse_ident_test() {
     let input = [
-        "a", "_", "answer", "calc", "b", "c", "d", "e", "add", "fib", "n",
+        "a", "_", "answer", "calc", "b", "c", "d", "e", "add", "fib", "n", "print",
     ];
     let expect = [
         Ident("a".into()),
@@ -581,6 +707,7 @@ fn parse_ident_test() {
         Ident("add".into()),
         Ident("fib".into()),
         Ident("n".into()),
+        Ident("print".into()),
     ];
 
     loop_test(input, expect, |p| p.parse_ident().unwrap());
