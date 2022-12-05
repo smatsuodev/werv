@@ -39,11 +39,48 @@ impl Parser {
     fn parse_statement(&mut self) -> PResult<Statement> {
         let stmt = match self.cur_token.kind() {
             TokenKind::Let => self.parse_let_statement()?,
+            TokenKind::Fn => self.parse_fn_statement()?,
             _ => return Err(()),
         };
 
         self.consume(TokenKind::SemiColon)?;
         Ok(stmt)
+    }
+
+    fn parse_fn_statement(&mut self) -> PResult<Statement> {
+        self.consume(TokenKind::Fn)?;
+
+        let name = self.parse_ident()?;
+        let params = self.parse_params()?;
+
+        self.consume(TokenKind::Assign)?;
+
+        let body = self.parse_expression()?;
+
+        Ok(FunctionDefStatement { name, params, body })
+    }
+
+    fn parse_params(&mut self) -> PResult<Vec<Expression>> {
+        self.consume(TokenKind::LParen)?;
+
+        let mut params = Vec::new();
+
+        if self.consume(TokenKind::RParen).is_ok() {
+            return Ok(params);
+        }
+
+        params.push(self.parse_ident()?);
+
+        while !self.consume(TokenKind::RParen).is_ok() {
+            if self.is_eof() {
+                return Err(());
+            }
+
+            self.consume(TokenKind::Comma)?;
+            params.push(self.parse_ident()?);
+        }
+
+        Ok(params)
     }
 
     fn parse_let_statement(&mut self) -> PResult<Statement> {

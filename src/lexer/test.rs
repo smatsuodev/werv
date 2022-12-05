@@ -6,8 +6,8 @@ fn next_token_test() {
     let input = r"
 let _aA10 = 1 + 2 - 3 * 4 / 5; 
 fn fib(n) = fib(n-1) + fib(n-2);
-fn a() = {
-    return 0;
+fn add(a, b) = {
+    return a + b;
 };";
     let expect = [
         (Let, "let"),
@@ -44,13 +44,18 @@ fn a() = {
         (RParen, ")"),
         (SemiColon, ";"),
         (Fn, "fn"),
-        (Ident, "a"),
+        (Ident, "add"),
         (LParen, "("),
+        (Ident, "a"),
+        (Comma, ","),
+        (Ident, "b"),
         (RParen, ")"),
         (Assign, "="),
         (LBrace, "{"),
         (Return, "return"),
-        (Number, "0"),
+        (Ident, "a"),
+        (Plus, "+"),
+        (Ident, "b"),
         (SemiColon, ";"),
         (RBrace, "}"),
         (SemiColon, ";"),

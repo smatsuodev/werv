@@ -5,7 +5,15 @@ pub enum Node {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
-    LetStatement { name: Expression, value: Expression },
+    LetStatement {
+        name: Expression,
+        value: Expression,
+    },
+    FunctionDefStatement {
+        name: Expression,
+        params: Vec<Expression>,
+        body: Expression,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

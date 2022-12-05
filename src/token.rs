@@ -2,6 +2,8 @@
 pub enum TokenKind {
     /// =
     Assign,
+    /// ,
+    Comma,
     /// ;
     SemiColon,
     /// +

@@ -26,6 +26,7 @@ impl Lexer {
         let c = self.ch;
         let kind = match c {
             '=' => TokenKind::Assign,
+            ',' => TokenKind::Comma,
             ';' => TokenKind::SemiColon,
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
