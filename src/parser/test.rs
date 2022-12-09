@@ -33,6 +33,7 @@ fn f(x, y) = {
 
     return nx + ny;
 };
+if a%2 { a } else { 0 };
 "#];
     let expect = [vec![
         LetStatement {
@@ -154,6 +155,15 @@ fn f(x, y) = {
                 }),
             ]),
         },
+        ExprStatement(IfExpr {
+            condition: Box::new(BinaryExpr {
+                kind: Mod,
+                lhs: Box::new(Ident("a".into())),
+                rhs: Box::new(Integer(2)),
+            }),
+            consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Ident("a".into()))])),
+            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Integer(0))]))),
+        }),
     ]];
 
     loop_test(input, expect, |p| p.parse().unwrap());
@@ -448,6 +458,22 @@ fn parse_expression_test() {
     ];
 
     loop_test(input, expect, |p| p.parse_expression().unwrap());
+}
+
+#[test]
+fn parse_if_test() {
+    let input = ["if a%2 { a } else { 0 };"];
+    let expect = [IfExpr {
+        condition: Box::new(BinaryExpr {
+            kind: Mod,
+            lhs: Box::new(Ident("a".into())),
+            rhs: Box::new(Integer(2)),
+        }),
+        consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Ident("a".into()))])),
+        alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Integer(0))]))),
+    }];
+
+    loop_test(input, expect, |p| p.parse_if().unwrap());
 }
 
 #[test]

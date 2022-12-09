@@ -37,15 +37,19 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> PResult<Statement> {
-        let stmt = match self.cur_token.kind() {
-            TokenKind::Let => self.parse_let_statement()?,
-            TokenKind::Fn => self.parse_fn_statement()?,
-            TokenKind::Return => self.parse_return_statement()?,
-            _ => self.parse_expr_statement()?,
-        };
+        let stmt = self.parse_statement_body()?;
 
         self.consume(TokenKind::SemiColon)?;
         Ok(stmt)
+    }
+
+    fn parse_statement_body(&mut self) -> PResult<Statement> {
+        match self.cur_token.kind() {
+            TokenKind::Let => self.parse_let_statement(),
+            TokenKind::Fn => self.parse_fn_statement(),
+            TokenKind::Return => self.parse_return_statement(),
+            _ => self.parse_expr_statement(),
+        }
     }
 
     fn parse_return_statement(&mut self) -> PResult<Statement> {
@@ -110,11 +114,39 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> PResult<Expression> {
+        if self.is_cur(TokenKind::If) {
+            return self.parse_if();
+        }
+
         if self.is_cur(TokenKind::LBrace) {
             return self.parse_block();
         }
 
-        self.parse_add()
+        self.parse_mod()
+    }
+
+    fn parse_if(&mut self) -> PResult<Expression> {
+        self.consume(TokenKind::If)?;
+
+        let condition = Box::new(self.parse_expression()?);
+        let consequence = Box::new(self.parse_block()?);
+        let alternative = if self.consume(TokenKind::Else).is_ok() {
+            let expr = if self.is_cur(TokenKind::If) {
+                self.parse_if()?
+            } else {
+                self.parse_block()?
+            };
+
+            Some(Box::new(expr))
+        } else {
+            None
+        };
+
+        Ok(IfExpr {
+            condition,
+            consequence,
+            alternative,
+        })
     }
 
     fn parse_block(&mut self) -> PResult<Expression> {
@@ -123,12 +155,40 @@ impl Parser {
         let mut stmts = Vec::new();
 
         while !self.consume(TokenKind::RBrace).is_ok() {
-            let stmt = self.parse_statement()?;
+            let stmt_body = self.parse_statement_body()?;
 
-            stmts.push(stmt)
+            // もしセミコロンがない式で終わった場合
+            if let Statement::ExprStatement(expr) = stmt_body {
+                if !self.is_cur(TokenKind::SemiColon) {
+                    stmts.push(BlockReturnStatement(expr));
+                    self.consume(TokenKind::RBrace)?;
+                    break;
+                }
+            } else {
+                self.consume(TokenKind::SemiColon)?;
+                stmts.push(stmt_body);
+            }
         }
 
         Ok(BlockExpr(stmts))
+    }
+
+    fn parse_mod(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_add()?;
+
+        loop {
+            if self.consume(TokenKind::Percent).is_ok() {
+                node = BinaryExpr {
+                    kind: Mod,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else {
+                break;
+            }
+        }
+
+        Ok(node)
     }
 
     fn parse_add(&mut self) -> PResult<Expression> {

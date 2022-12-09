@@ -15,11 +15,17 @@ pub enum Statement {
         body: Expression,
     },
     ReturnStatement(Expression),
+    BlockReturnStatement(Expression),
     ExprStatement(Expression),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    IfExpr {
+        condition: Box<Expression>,
+        consequence: Box<Expression>,
+        alternative: Option<Box<Expression>>,
+    },
     BlockExpr(Vec<Statement>),
     CallExpr {
         name: Box<Expression>,
@@ -40,4 +46,5 @@ pub enum BinaryExprKind {
     Sub,
     Mul,
     Div,
+    Mod,
 }
