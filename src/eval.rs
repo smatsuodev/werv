@@ -39,6 +39,7 @@ fn eval_expression(e: Expression) -> EResult {
     match e {
         Expression::Integer(i) => eval_integer(i),
         Expression::BinaryExpr { kind, lhs, rhs } => eval_binary_expr(kind, lhs, rhs),
+        Expression::Boolean(b) => eval_boolean(b),
         _ => Err(()),
     }
 }
@@ -64,4 +65,8 @@ fn eval_binary_expr(kind: BinaryExprKind, lhs: Box<Expression>, rhs: Box<Express
 
 fn eval_integer(i: isize) -> EResult {
     Ok(Some(Integer(i)))
+}
+
+fn eval_boolean(b: bool) -> EResult {
+    Ok(Some(Boolean(b)))
 }

@@ -45,6 +45,7 @@ pub enum Expression {
     },
     Ident(String),
     Integer(isize),
+    Boolean(bool),
 }
 impl Into<Node> for Expression {
     fn into(self) -> Node {

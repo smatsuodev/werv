@@ -122,6 +122,10 @@ impl Parser {
             return self.parse_block();
         }
 
+        if self.is_cur(TokenKind::True) || self.is_cur(TokenKind::False) {
+            return self.parse_bool();
+        }
+
         self.parse_mod()
     }
 
@@ -171,6 +175,15 @@ impl Parser {
         }
 
         Ok(BlockExpr(stmts))
+    }
+
+    fn parse_bool(&mut self) -> PResult<Expression> {
+        if self.consume(TokenKind::True).is_ok() {
+            return Ok(Boolean(true));
+        }
+
+        self.consume(TokenKind::False)?;
+        Ok(Boolean(false))
     }
 
     fn parse_mod(&mut self) -> PResult<Expression> {

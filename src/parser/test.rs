@@ -34,6 +34,7 @@ fn f(x, y) = {
     return nx + ny;
 };
 if a%2 { a } else { 0 };
+if false { true } else { false };
 "#];
     let expect = [Node::Program(vec![
         LetStatement {
@@ -163,6 +164,13 @@ if a%2 { a } else { 0 };
             }),
             consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Ident("a".into()))])),
             alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Integer(0))]))),
+        }),
+        ExprStatement(IfExpr {
+            condition: Box::new(Boolean(false)),
+            consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(true))])),
+            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(
+                false,
+            ))]))),
         }),
     ])];
 
@@ -362,6 +370,8 @@ fn parse_expression_test() {
         "add(fib(n-1), fib(n-2))",
         "print(fib(10)+10)",
         "{ let nx = x + 1; let ny = y + 1; return nx + ny; }",
+        "if a%2 { a } else { 0 }",
+        "if false { true } else { false }",
     ];
     let expect = [
         Integer(1234567890),
@@ -455,6 +465,22 @@ fn parse_expression_test() {
                 rhs: Box::new(Ident("ny".into())),
             }),
         ]),
+        IfExpr {
+            condition: Box::new(BinaryExpr {
+                kind: Mod,
+                lhs: Box::new(Ident("a".into())),
+                rhs: Box::new(Integer(2)),
+            }),
+            consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Ident("a".into()))])),
+            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Integer(0))]))),
+        },
+        IfExpr {
+            condition: Box::new(Boolean(false)),
+            consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(true))])),
+            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(
+                false,
+            ))]))),
+        },
     ];
 
     loop_test(input, expect, |p| p.parse_expression().unwrap());
