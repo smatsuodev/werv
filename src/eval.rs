@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 use crate::{
-    ast::{Expression, Node, Statement},
+    ast::{BinaryExprKind, Expression, Node, Statement},
     object::{Object, Object::*},
 };
 
@@ -29,6 +29,7 @@ fn eval_statements(stmts: Vec<Statement>) -> EResult {
 
 fn eval_statement(s: Statement) -> EResult {
     match s {
+        // TODO: 今はデバッグのためにExprStatementが値を返すようになっているが、本来は返さない
         Statement::ExprStatement(e) => eval(e),
         _ => Err(()),
     }
@@ -37,8 +38,28 @@ fn eval_statement(s: Statement) -> EResult {
 fn eval_expression(e: Expression) -> EResult {
     match e {
         Expression::Integer(i) => eval_integer(i),
+        Expression::BinaryExpr { kind, lhs, rhs } => eval_binary_expr(kind, lhs, rhs),
         _ => Err(()),
     }
+}
+
+fn eval_binary_expr(kind: BinaryExprKind, lhs: Box<Expression>, rhs: Box<Expression>) -> EResult {
+    let lhs = eval(*lhs)?.ok_or(())?;
+    let rhs = eval(*rhs)?.ok_or(())?;
+
+    if let (Integer(lhs), Integer(rhs)) = (lhs, rhs) {
+        let result = match kind {
+            BinaryExprKind::Add => Integer(lhs + rhs),
+            BinaryExprKind::Sub => Integer(lhs - rhs),
+            BinaryExprKind::Mul => Integer(lhs * rhs),
+            BinaryExprKind::Div => Integer(lhs / rhs),
+            BinaryExprKind::Mod => Integer(lhs % rhs),
+        };
+
+        return Ok(Some(result));
+    }
+
+    Err(())
 }
 
 fn eval_integer(i: isize) -> EResult {

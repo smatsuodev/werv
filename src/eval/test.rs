@@ -26,3 +26,11 @@ fn eval_integer_test() {
 
     loop_test(input, expect);
 }
+
+#[test]
+fn eval_binary_expr() {
+    let input = ["1+2-3;", "3*4;", "8/2;", "100%11;"];
+    let expect = [Integer(0), Integer(12), Integer(4), Integer(1)];
+
+    loop_test(input, expect);
+}
