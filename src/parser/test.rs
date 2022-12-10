@@ -1,6 +1,6 @@
 use super::Parser;
 use crate::{
-    ast::{BinaryExprKind::*, Expression::*, Statement::*},
+    ast::{BinaryExprKind::*, Expression::*, Node, Statement::*},
     lexer::Lexer,
 };
 
@@ -35,7 +35,7 @@ fn f(x, y) = {
 };
 if a%2 { a } else { 0 };
 "#];
-    let expect = [vec![
+    let expect = [Node::Program(vec![
         LetStatement {
             name: Ident("a".to_string()),
             value: Integer(1234567890),
@@ -164,7 +164,7 @@ if a%2 { a } else { 0 };
             consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Ident("a".into()))])),
             alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Integer(0))]))),
         }),
-    ]];
+    ])];
 
     loop_test(input, expect, |p| p.parse().unwrap());
 }

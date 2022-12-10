@@ -1,4 +1,6 @@
+#[derive(Debug, PartialEq, Clone)]
 pub enum Node {
+    Program(Vec<Statement>),
     Statement(Statement),
     Expression(Expression),
 }
@@ -17,6 +19,11 @@ pub enum Statement {
     ReturnStatement(Expression),
     BlockReturnStatement(Expression),
     ExprStatement(Expression),
+}
+impl Into<Node> for Statement {
+    fn into(self) -> Node {
+        Node::Statement(self)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -38,6 +45,11 @@ pub enum Expression {
     },
     Ident(String),
     Integer(isize),
+}
+impl Into<Node> for Expression {
+    fn into(self) -> Node {
+        Node::Expression(self)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

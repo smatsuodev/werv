@@ -1,10 +1,10 @@
+#[cfg(test)]
+mod test;
 use crate::{
-    ast::{BinaryExprKind::*, Expression, Expression::*, Statement, Statement::*},
+    ast::{BinaryExprKind::*, Expression, Expression::*, Node, Statement, Statement::*},
     lexer::Lexer,
     token::{Token, TokenKind},
 };
-#[cfg(test)]
-mod test;
 
 type PResult<T> = Result<T, ()>;
 
@@ -26,14 +26,14 @@ impl Parser {
         p
     }
 
-    pub fn parse(&mut self) -> PResult<Vec<Statement>> {
+    pub fn parse(&mut self) -> PResult<Node> {
         let mut stmts = Vec::new();
 
         while !self.is_eof() {
             stmts.push(self.parse_statement()?);
         }
 
-        Ok(stmts)
+        Ok(Node::Program(stmts))
     }
 
     fn parse_statement(&mut self) -> PResult<Statement> {

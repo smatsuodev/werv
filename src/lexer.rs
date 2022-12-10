@@ -1,6 +1,6 @@
-use crate::token::{Token, TokenKind};
 #[cfg(test)]
 mod test;
+use crate::token::{Token, TokenKind};
 
 pub struct Lexer {
     input: String,
