@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod test;
 use crate::{
-    ast::{BinaryExprKind::*, Expression, Expression::*, Node, Statement, Statement::*},
+    ast::{
+        BinaryExprKind::*, Expression, Expression::*, Node, Statement, Statement::*,
+        UnaryExprKind::*,
+    },
     lexer::Lexer,
     token::{Token, TokenKind},
 };
@@ -122,7 +125,10 @@ impl Parser {
             return self.parse_block();
         }
 
-        if self.is_cur(TokenKind::True) || self.is_cur(TokenKind::False) {
+        if self.is_cur(TokenKind::Bang)
+            || self.is_cur(TokenKind::True)
+            || self.is_cur(TokenKind::False)
+        {
             return self.parse_bool();
         }
 
@@ -178,12 +184,30 @@ impl Parser {
     }
 
     fn parse_bool(&mut self) -> PResult<Expression> {
+        self.parse_bool_unary()
+    }
+
+    fn parse_bool_unary(&mut self) -> PResult<Expression> {
+        if self.consume(TokenKind::Bang).is_ok() {
+            return Ok(UnaryExpr {
+                kind: Not,
+                expr: Box::new(self.parse_bool_unary()?),
+            });
+        }
+
+        self.parse_bool_primary()
+    }
+
+    fn parse_bool_primary(&mut self) -> PResult<Expression> {
         if self.consume(TokenKind::True).is_ok() {
             return Ok(Boolean(true));
         }
 
-        self.consume(TokenKind::False)?;
-        Ok(Boolean(false))
+        if self.consume(TokenKind::False).is_ok() {
+            return Ok(Boolean(false));
+        }
+
+        self.parse_primary()
     }
 
     fn parse_mod(&mut self) -> PResult<Expression> {
@@ -229,20 +253,20 @@ impl Parser {
     }
 
     fn parse_mul(&mut self) -> PResult<Expression> {
-        let mut node = self.parse_primary()?;
+        let mut node = self.parse_unary()?;
 
         loop {
             if self.consume(TokenKind::Asterisk).is_ok() {
                 node = BinaryExpr {
                     kind: Mul,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_primary()?),
+                    rhs: Box::new(self.parse_unary()?),
                 };
             } else if self.consume(TokenKind::Slash).is_ok() {
                 node = BinaryExpr {
                     kind: Div,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_primary()?),
+                    rhs: Box::new(self.parse_unary()?),
                 };
             } else {
                 break;
@@ -250,6 +274,17 @@ impl Parser {
         }
 
         Ok(node)
+    }
+
+    fn parse_unary(&mut self) -> PResult<Expression> {
+        if self.consume(TokenKind::Minus).is_ok() {
+            return Ok(UnaryExpr {
+                kind: Minus,
+                expr: Box::new(self.parse_primary()?),
+            });
+        }
+
+        self.parse_primary()
     }
 
     fn parse_primary(&mut self) -> PResult<Expression> {

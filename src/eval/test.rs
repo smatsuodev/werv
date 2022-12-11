@@ -29,8 +29,8 @@ fn eval_integer_test() {
 
 #[test]
 fn eval_binary_expr_test() {
-    let input = ["1+2-3;", "3*4;", "8/2;", "100%11;"];
-    let expect = [Integer(0), Integer(12), Integer(4), Integer(1)];
+    let input = ["1+2-3;", "3*4;", "8/2;", "100%11;", "20--10;"];
+    let expect = [Integer(0), Integer(12), Integer(4), Integer(1), Integer(30)];
 
     loop_test(input, expect);
 }
@@ -39,6 +39,20 @@ fn eval_binary_expr_test() {
 fn eval_boolean_test() {
     let input = ["true;", "false;"];
     let expect = [Boolean(true), Boolean(false)];
+
+    loop_test(input, expect);
+}
+
+#[test]
+fn eval_unary_expr_test() {
+    let input = ["!true;", "!false;", "-10;", "!(!!true);", "-(-10);"];
+    let expect = [
+        Boolean(false),
+        Boolean(true),
+        Integer(-10),
+        Boolean(false),
+        Integer(10),
+    ];
 
     loop_test(input, expect);
 }

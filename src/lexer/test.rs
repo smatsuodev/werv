@@ -9,7 +9,8 @@ fn fib(n) = fib(n-1) + fib(n-2);
 fn add(a, b) = {
     return a + b;
 };
-fn only_odd(n) = if n % 2 { n } else { 0 }; ";
+fn only_odd(n) = if n % 2 { n } else { 0 };
+if false { !false } else if true { !true }";
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
@@ -78,6 +79,19 @@ fn only_odd(n) = if n % 2 { n } else { 0 }; ";
         (Number, "0"),
         (RBrace, "}"),
         (SemiColon, ";"),
+        (If, "if"),
+        (False, "false"),
+        (LBrace, "{"),
+        (Bang, "!"),
+        (False, "false"),
+        (RBrace, "}"),
+        (Else, "else"),
+        (If, "if"),
+        (True, "true"),
+        (LBrace, "{"),
+        (Bang, "!"),
+        (True, "true"),
+        (RBrace, "}"),
         (EOF, "\0"),
     ];
     let mut l = Lexer::new(input.to_string());

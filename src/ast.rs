@@ -28,6 +28,10 @@ impl Into<Node> for Statement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    UnaryExpr {
+        kind: UnaryExprKind,
+        expr: Box<Expression>,
+    },
     IfExpr {
         condition: Box<Expression>,
         consequence: Box<Expression>,
@@ -51,6 +55,12 @@ impl Into<Node> for Expression {
     fn into(self) -> Node {
         Node::Expression(self)
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum UnaryExprKind {
+    Not,
+    Minus,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

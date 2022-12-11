@@ -1,6 +1,6 @@
 use super::Parser;
 use crate::{
-    ast::{BinaryExprKind::*, Expression::*, Node, Statement::*},
+    ast::{BinaryExprKind::*, Expression::*, Node, Statement::*, UnaryExprKind::*},
     lexer::Lexer,
 };
 
@@ -34,7 +34,8 @@ fn f(x, y) = {
     return nx + ny;
 };
 if a%2 { a } else { 0 };
-if false { true } else { false };
+if false { true } else { !false };
+20 - -10;
 "#];
     let expect = [Node::Program(vec![
         LetStatement {
@@ -168,9 +169,18 @@ if false { true } else { false };
         ExprStatement(IfExpr {
             condition: Box::new(Boolean(false)),
             consequence: Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(true))])),
-            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(Boolean(
-                false,
-            ))]))),
+            alternative: Some(Box::new(BlockExpr(vec![BlockReturnStatement(UnaryExpr {
+                kind: Not,
+                expr: Box::new(Boolean(false)),
+            })]))),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Sub,
+            lhs: Box::new(Integer(20)),
+            rhs: Box::new(UnaryExpr {
+                kind: Minus,
+                expr: Box::new(Integer(10)),
+            }),
         }),
     ])];
 
@@ -533,6 +543,39 @@ fn parse_block_test() {
 }
 
 #[test]
+fn parse_bool_test() {
+    let input = ["true", "false"];
+    let expect = [Boolean(true), Boolean(false)];
+
+    loop_test(input, expect, |p| p.parse_bool().unwrap());
+}
+
+#[test]
+fn parse_bool_unary_test() {
+    let input = ["!true", "!false"];
+    let expect = [
+        UnaryExpr {
+            kind: Not,
+            expr: Box::new(Boolean(true)),
+        },
+        UnaryExpr {
+            kind: Not,
+            expr: Box::new(Boolean(false)),
+        },
+    ];
+
+    loop_test(input, expect, |p| p.parse_bool_unary().unwrap());
+}
+
+#[test]
+fn parse_bool_primary_test() {
+    let input = ["true", "false"];
+    let expect = [Boolean(true), Boolean(false)];
+
+    loop_test(input, expect, |p| p.parse_bool_primary().unwrap());
+}
+
+#[test]
 fn parse_add_test() {
     let input = [
         "1234567890",
@@ -716,6 +759,24 @@ fn parse_mul_test() {
     ];
 
     loop_test(input, expect, |p| p.parse_mul().unwrap());
+}
+
+#[test]
+
+fn parse_unary_test() {
+    let input = ["-20", "-2"];
+    let expect = [
+        UnaryExpr {
+            kind: Minus,
+            expr: Box::new(Integer(20)),
+        },
+        UnaryExpr {
+            kind: Minus,
+            expr: Box::new(Integer(2)),
+        },
+    ];
+
+    loop_test(input, expect, |p| p.parse_unary().unwrap());
 }
 
 #[test]

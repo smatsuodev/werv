@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 use crate::{
-    ast::{BinaryExprKind, Expression, Node, Statement},
+    ast::{BinaryExprKind, Expression, Node, Statement, UnaryExprKind},
     object::{Object, Object::*},
 };
 
@@ -37,11 +37,25 @@ fn eval_statement(s: Statement) -> EResult {
 
 fn eval_expression(e: Expression) -> EResult {
     match e {
-        Expression::Integer(i) => eval_integer(i),
+        Expression::UnaryExpr { kind, expr } => eval_unary_expr(kind, expr),
         Expression::BinaryExpr { kind, lhs, rhs } => eval_binary_expr(kind, lhs, rhs),
+        Expression::Integer(i) => eval_integer(i),
         Expression::Boolean(b) => eval_boolean(b),
         _ => Err(()),
     }
+}
+
+fn eval_unary_expr(kind: UnaryExprKind, expr: Box<Expression>) -> EResult {
+    let expr = eval(*expr)?.ok_or(())?;
+
+    if let (UnaryExprKind::Not, Object::Boolean(b)) = (kind, &expr) {
+        return eval_boolean(!b);
+    }
+    if let (UnaryExprKind::Minus, Object::Integer(i)) = (kind, &expr) {
+        return eval_integer(-i);
+    }
+
+    Err(())
 }
 
 fn eval_binary_expr(kind: BinaryExprKind, lhs: Box<Expression>, rhs: Box<Expression>) -> EResult {

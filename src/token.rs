@@ -16,6 +16,8 @@ pub enum TokenKind {
     Slash,
     /// %
     Percent,
+    /// !
+    Bang,
     /// (
     LParen,
     /// )
