@@ -168,16 +168,18 @@ impl Parser {
             let stmt_body = self.parse_statement_body()?;
 
             // もしセミコロンがない式で終わった場合
-            if let Statement::ExprStatement(expr) = stmt_body {
-                if !self.is_cur(TokenKind::SemiColon) {
+            if !self.is_cur(TokenKind::SemiColon) {
+                if let Statement::ExprStatement(expr) = stmt_body {
                     stmts.push(BlockReturnStatement(expr));
                     self.consume(TokenKind::RBrace)?;
                     break;
+                } else {
+                    return Err(());
                 }
-            } else {
-                self.consume(TokenKind::SemiColon)?;
-                stmts.push(stmt_body);
             }
+
+            self.consume(TokenKind::SemiColon)?;
+            stmts.push(stmt_body);
         }
 
         Ok(BlockExpr(stmts))

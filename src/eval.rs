@@ -37,12 +37,38 @@ fn eval_statement(s: Statement) -> EResult {
 
 fn eval_expression(e: Expression) -> EResult {
     match e {
+        Expression::IfExpr {
+            condition,
+            consequence,
+            alternative,
+        } => eval_if_expr(condition, consequence, alternative),
+        Expression::BlockExpr(stmts) => eval_block(stmts),
         Expression::UnaryExpr { kind, expr } => eval_unary_expr(kind, expr),
         Expression::BinaryExpr { kind, lhs, rhs } => eval_binary_expr(kind, lhs, rhs),
         Expression::Integer(i) => eval_integer(i),
         Expression::Boolean(b) => eval_boolean(b),
         _ => Err(()),
     }
+}
+
+fn eval_block(stmts: Vec<Statement>) -> EResult {
+    eval_statements(stmts)
+}
+
+fn eval_if_expr(
+    condition: Box<Expression>,
+    consequence: Box<Expression>,
+    alternative: Option<Box<Expression>>,
+) -> EResult {
+    let condition = eval(*condition)?.ok_or(())?;
+
+    if condition == Boolean(true) {
+        return eval(*consequence);
+    } else if let Some(alternative) = alternative {
+        return eval(*alternative);
+    }
+
+    Ok(None)
 }
 
 fn eval_unary_expr(kind: UnaryExprKind, expr: Box<Expression>) -> EResult {

@@ -56,3 +56,15 @@ fn eval_unary_expr_test() {
 
     loop_test(input, expect);
 }
+
+#[test]
+fn eval_if_expr_test() {
+    let input = [
+        "if true { 0; };",
+        "if false { 0; } else if true { 1; };",
+        "if false { 0; } else if false { 1; } else { 2; };",
+    ];
+    let expect = [Integer(0), Integer(1), Integer(2)];
+
+    loop_test(input, expect);
+}
