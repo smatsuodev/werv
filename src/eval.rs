@@ -31,8 +31,13 @@ fn eval_statement(s: Statement) -> EResult {
     match s {
         // TODO: 今はデバッグのためにExprStatementが値を返すようになっているが、本来は返さない
         Statement::ExprStatement(e) => eval(e),
+        Statement::BlockReturnStatement(e) => eval_block_return_stmt(e),
         _ => Err(()),
     }
+}
+
+fn eval_block_return_stmt(expr: Expression) -> EResult {
+    eval(expr)
 }
 
 fn eval_expression(e: Expression) -> EResult {
