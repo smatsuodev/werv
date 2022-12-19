@@ -20,6 +20,6 @@ pub fn start() {
         let program = parser.parse().expect("Parser error occurred");
         let result = eval(program, &mut env).expect("Eval error occurred");
 
-        println!("{:?}", result);
+        println!("{}", result);
     }
 }

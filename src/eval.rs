@@ -1,14 +1,15 @@
 mod error;
 #[cfg(test)]
 mod test;
+
 use self::error::{EvalError, EvalError::*};
 use crate::{
     ast::{BinaryExprKind, Expression, Node, Statement, UnaryExprKind},
     environment::Environment,
-    object::{Object, Object::*},
+    object::{Object, Object::*, NULL},
 };
 
-type EResult = Result<Option<Object>, EvalError>;
+type EResult = Result<Object, EvalError>;
 
 pub fn eval(node: impl Into<Node>, env: &mut Environment) -> EResult {
     let node: Node = node.into();
@@ -21,7 +22,7 @@ pub fn eval(node: impl Into<Node>, env: &mut Environment) -> EResult {
 }
 
 fn eval_statements(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
-    let mut result = None;
+    let mut result = NULL;
 
     for s in stmts {
         result = eval(s, env)?;
@@ -41,7 +42,7 @@ fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
 }
 
 fn eval_let_stmt(name: Expression, value: Expression, env: &mut Environment) -> EResult {
-    let value = eval(value, env)?.ok_or(EvalLetStatementError)?;
+    let value = eval(value, env)?;
 
     if let Expression::Ident(name) = name {
         env.insert(name, value);
@@ -49,7 +50,7 @@ fn eval_let_stmt(name: Expression, value: Expression, env: &mut Environment) -> 
         return Err(EvalLetStatementError);
     }
 
-    Ok(None)
+    Ok(NULL)
 }
 
 fn eval_block_return_stmt(expr: Expression, env: &mut Environment) -> EResult {
@@ -83,7 +84,7 @@ fn eval_if_expr(
     alternative: Option<Box<Expression>>,
     env: &mut Environment,
 ) -> EResult {
-    let condition = eval(*condition, env)?.ok_or(EvalIfExpressionError)?;
+    let condition = eval(*condition, env)?;
 
     if condition == Boolean(true) {
         return eval(*consequence, env);
@@ -91,11 +92,11 @@ fn eval_if_expr(
         return eval(*alternative, env);
     }
 
-    Ok(None)
+    Ok(NULL)
 }
 
 fn eval_unary_expr(kind: UnaryExprKind, expr: Box<Expression>, env: &mut Environment) -> EResult {
-    let expr = eval(*expr, env)?.ok_or(EvalUnaryExpressionError)?;
+    let expr = eval(*expr, env)?;
 
     if let (UnaryExprKind::Not, Object::Boolean(b)) = (kind, &expr) {
         return eval_boolean(!b);
@@ -113,8 +114,8 @@ fn eval_binary_expr(
     rhs: Box<Expression>,
     env: &mut Environment,
 ) -> EResult {
-    let lhs = eval(*lhs, env)?.ok_or(EvalBinaryExpressionError)?;
-    let rhs = eval(*rhs, env)?.ok_or(EvalBinaryExpressionError)?;
+    let lhs = eval(*lhs, env)?;
+    let rhs = eval(*rhs, env)?;
 
     if let (Integer(lhs), Integer(rhs)) = (lhs, rhs) {
         let result = match kind {
@@ -125,20 +126,20 @@ fn eval_binary_expr(
             BinaryExprKind::Mod => Integer(lhs % rhs),
         };
 
-        return Ok(Some(result));
+        return Ok(result);
     }
 
     Err(EvalBinaryExpressionError)
 }
 
 fn eval_integer(i: isize) -> EResult {
-    Ok(Some(Integer(i)))
+    Ok(Integer(i))
 }
 
 fn eval_boolean(b: bool) -> EResult {
-    Ok(Some(Boolean(b)))
+    Ok(Boolean(b))
 }
 
 fn eval_ident(i: String, env: &mut Environment) -> EResult {
-    Ok(env.get(i).cloned())
+    Ok(env.get(i).ok_or(EvalIdentError)?.clone())
 }

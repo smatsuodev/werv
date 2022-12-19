@@ -15,7 +15,7 @@ where
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
         let mut env = Environment::new();
-        let object = eval(program, &mut env).unwrap().unwrap();
+        let object = eval(program, &mut env).unwrap();
 
         assert_eq!(object, expect[i].clone());
     }
