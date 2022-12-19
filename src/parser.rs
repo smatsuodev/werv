@@ -1,3 +1,4 @@
+mod error;
 #[cfg(test)]
 mod test;
 use crate::{
@@ -9,7 +10,9 @@ use crate::{
     token::{Token, TokenKind},
 };
 
-type PResult<T> = Result<T, ()>;
+use self::error::{ParseError, ParseError::*};
+
+type PResult<T> = Result<T, ParseError>;
 
 pub struct Parser {
     lexer: Lexer,
@@ -94,7 +97,7 @@ impl Parser {
 
         while !self.consume(TokenKind::RParen).is_ok() {
             if self.is_eof() {
-                return Err(());
+                return Err(ParseParamsError);
             }
 
             self.consume(TokenKind::Comma)?;
@@ -174,7 +177,7 @@ impl Parser {
                     self.consume(TokenKind::RBrace)?;
                     break;
                 } else {
-                    return Err(());
+                    return Err(ParseBlockError);
                 }
             }
 
@@ -325,7 +328,7 @@ impl Parser {
 
         while !self.consume(TokenKind::RParen).is_ok() {
             if self.is_eof() {
-                return Err(());
+                return Err(ParseArgsError);
             }
 
             self.consume(TokenKind::Comma)?;
@@ -346,7 +349,10 @@ impl Parser {
 
     fn parse_integer(&mut self) -> PResult<Expression> {
         let token = self.consume(TokenKind::Number)?;
-        let value = token.literal().parse::<isize>().or(Err(()))?;
+        let value = token
+            .literal()
+            .parse::<isize>()
+            .or(Err(ParseIntegerError))?;
 
         Ok(Integer(value))
     }
@@ -367,7 +373,7 @@ impl Parser {
 
     fn consume(&mut self, kind: TokenKind) -> PResult<Token> {
         if self.cur_token.kind() != kind {
-            return Err(());
+            return Err(ParseConsumeError(kind));
         }
 
         let token = self.cur_token.clone();

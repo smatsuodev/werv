@@ -19,15 +19,15 @@ pub fn start() {
         let mut parser = Parser::new(lexer);
         let program = match parser.parse() {
             Ok(p) => p,
-            _ => {
-                eprintln!("Parser error occurred");
+            Err(e) => {
+                eprintln!("Parser error: {:?}", e);
                 continue;
             }
         };
         let result = match eval(program, &mut env) {
             Ok(o) => o,
-            _ => {
-                eprintln!("Eval error occurred");
+            Err(e) => {
+                eprintln!("Eval error: {:?}", e);
                 continue;
             }
         };
