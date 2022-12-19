@@ -117,6 +117,13 @@ fn eval_binary_expr(
     let lhs = eval(*lhs, env)?;
     let rhs = eval(*rhs, env)?;
 
+    if kind == BinaryExprKind::Eq {
+        return Ok(Boolean(lhs == rhs));
+    };
+    if kind == BinaryExprKind::Ne {
+        return Ok(Boolean(lhs != rhs));
+    };
+
     if let (Integer(lhs), Integer(rhs)) = (lhs, rhs) {
         let result = match kind {
             BinaryExprKind::Add => Integer(lhs + rhs),
@@ -124,6 +131,11 @@ fn eval_binary_expr(
             BinaryExprKind::Mul => Integer(lhs * rhs),
             BinaryExprKind::Div => Integer(lhs / rhs),
             BinaryExprKind::Mod => Integer(lhs % rhs),
+            BinaryExprKind::Lt => Boolean(lhs < rhs),
+            BinaryExprKind::Le => Boolean(lhs <= rhs),
+            BinaryExprKind::Gt => Boolean(lhs > rhs),
+            BinaryExprKind::Ge => Boolean(lhs >= rhs),
+            _ => return Err(EvalBinaryExpressionError),
         };
 
         return Ok(result);

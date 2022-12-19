@@ -36,6 +36,12 @@ fn f(x, y) = {
 if a%2 { a } else { 0 };
 if false { true } else { !false };
 20 - -10;
+1==1;
+1!=1;
+1<1;
+1>1;
+1<=1;
+1>=1;
 "#];
     let expect = [Node::Program(vec![
         LetStatement {
@@ -181,6 +187,36 @@ if false { true } else { !false };
                 kind: Minus,
                 expr: Box::new(Integer(10)),
             }),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Eq,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Ne,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Lt,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Gt,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Le,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
+        }),
+        ExprStatement(BinaryExpr {
+            kind: Ge,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(1)),
         }),
     ])];
 

@@ -70,4 +70,10 @@ pub enum BinaryExprKind {
     Mul,
     Div,
     Mod,
+    Eq,
+    Ne,
+    Le,
+    Lt,
+    Ge,
+    Gt,
 }

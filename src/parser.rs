@@ -135,7 +135,7 @@ impl Parser {
             return self.parse_bool();
         }
 
-        self.parse_mod()
+        self.parse_equal()
     }
 
     fn parse_if(&mut self) -> PResult<Expression> {
@@ -213,6 +213,58 @@ impl Parser {
         }
 
         self.parse_primary()
+    }
+
+    fn parse_equal(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_relational()?;
+
+        if self.consume(TokenKind::Eq).is_ok() {
+            node = BinaryExpr {
+                kind: Eq,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_relational()?),
+            };
+        } else if self.consume(TokenKind::Ne).is_ok() {
+            node = BinaryExpr {
+                kind: Ne,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_relational()?),
+            };
+        }
+
+        Ok(node)
+    }
+
+    fn parse_relational(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_mod()?;
+
+        if self.consume(TokenKind::Le).is_ok() {
+            node = BinaryExpr {
+                kind: Le,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_mod()?),
+            };
+        } else if self.consume(TokenKind::Lt).is_ok() {
+            node = BinaryExpr {
+                kind: Lt,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_mod()?),
+            };
+        } else if self.consume(TokenKind::Ge).is_ok() {
+            node = BinaryExpr {
+                kind: Ge,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_mod()?),
+            };
+        } else if self.consume(TokenKind::Gt).is_ok() {
+            node = BinaryExpr {
+                kind: Gt,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_mod()?),
+            };
+        }
+
+        Ok(node)
     }
 
     fn parse_mod(&mut self) -> PResult<Expression> {
