@@ -2,4 +2,5 @@
 pub enum Object {
     Integer(isize),
     Boolean(bool),
+    Ident(String),
 }

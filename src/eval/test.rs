@@ -1,4 +1,5 @@
 use crate::{
+    environment::Environment,
     eval::eval,
     lexer::Lexer,
     object::Object::{self, *},
@@ -13,7 +14,8 @@ where
         let l = Lexer::new(input[i].to_string());
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
-        let object = eval(program).unwrap().unwrap();
+        let mut env = Environment::new();
+        let object = eval(program, &mut env).unwrap().unwrap();
 
         assert_eq!(object, expect[i].clone());
     }
@@ -65,6 +67,14 @@ fn eval_if_expr_test() {
         "if false { 0 } else if false { 1 } else { 2 };",
     ];
     let expect = [Integer(0), Integer(1), Integer(2)];
+
+    loop_test(input, expect);
+}
+
+#[test]
+fn eval_let_stmt_test() {
+    let input = ["let a = 10; let b = 20; b * a + 20;"];
+    let expect = [Integer(220)];
 
     loop_test(input, expect);
 }
