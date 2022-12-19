@@ -24,8 +24,38 @@ impl Lexer {
         self.skip_whitespace();
 
         let c = self.ch;
+        let mut literal = c.to_string();
         let kind = match c {
-            '=' => TokenKind::Assign,
+            '<' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{}=", c);
+
+                    TokenKind::Le
+                } else {
+                    TokenKind::Lt
+                }
+            }
+            '>' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{}=", c);
+
+                    TokenKind::Ge
+                } else {
+                    TokenKind::Gt
+                }
+            }
+            '=' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{}=", c);
+
+                    TokenKind::Eq
+                } else {
+                    TokenKind::Assign
+                }
+            }
             ',' => TokenKind::Comma,
             ';' => TokenKind::SemiColon,
             '+' => TokenKind::Plus,
@@ -33,7 +63,16 @@ impl Lexer {
             '*' => TokenKind::Asterisk,
             '/' => TokenKind::Slash,
             '%' => TokenKind::Percent,
-            '!' => TokenKind::Bang,
+            '!' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{}=", c);
+
+                    TokenKind::Ne
+                } else {
+                    TokenKind::Bang
+                }
+            }
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
             '{' => TokenKind::LBrace,
@@ -51,7 +90,7 @@ impl Lexer {
         };
 
         self.read_char();
-        Token::new(kind, c.to_string())
+        Token::new(kind, literal)
     }
 
     fn skip_whitespace(&mut self) {
@@ -102,5 +141,13 @@ impl Lexer {
         }
         self.position = self.next_position;
         self.next_position += 1;
+    }
+
+    fn peek_char(&self) -> char {
+        if self.next_position >= self.input.len() {
+            '\0'
+        } else {
+            self.input.chars().nth(self.next_position).unwrap()
+        }
     }
 }

@@ -27,6 +27,19 @@ pub enum TokenKind {
     /// }
     RBrace,
 
+    /// ==
+    Eq,
+    /// !=
+    Ne,
+    /// <
+    Lt,
+    /// <=
+    Le,
+    /// >
+    Gt,
+    /// >=
+    Ge,
+
     // キーワード
     Let,
     Fn,

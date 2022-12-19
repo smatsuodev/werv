@@ -10,7 +10,12 @@ fn add(a, b) = {
     return a + b;
 };
 fn only_odd(n) = if n % 2 { n } else { 0 };
-if false { !false } else if true { !true }";
+if 1==1 { !false } else if true { !true };
+1!=10;
+1<10;
+1<=10;
+1>10;
+1>=10;";
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
@@ -80,7 +85,9 @@ if false { !false } else if true { !true }";
         (RBrace, "}"),
         (SemiColon, ";"),
         (If, "if"),
-        (False, "false"),
+        (Number, "1"),
+        (Eq, "=="),
+        (Number, "1"),
         (LBrace, "{"),
         (Bang, "!"),
         (False, "false"),
@@ -92,6 +99,27 @@ if false { !false } else if true { !true }";
         (Bang, "!"),
         (True, "true"),
         (RBrace, "}"),
+        (SemiColon, ";"),
+        (Number, "1"),
+        (Ne, "!="),
+        (Number, "10"),
+        (SemiColon, ";"),
+        (Number, "1"),
+        (Lt, "<"),
+        (Number, "10"),
+        (SemiColon, ";"),
+        (Number, "1"),
+        (Le, "<="),
+        (Number, "10"),
+        (SemiColon, ";"),
+        (Number, "1"),
+        (Gt, ">"),
+        (Number, "10"),
+        (SemiColon, ";"),
+        (Number, "1"),
+        (Ge, ">="),
+        (Number, "10"),
+        (SemiColon, ";"),
         (EOF, "\0"),
     ];
     let mut l = Lexer::new(input.to_string());
