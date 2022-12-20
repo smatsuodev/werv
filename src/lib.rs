@@ -2,6 +2,7 @@ mod ast;
 mod builtin;
 mod environment;
 mod eval;
+pub mod io;
 mod lexer;
 mod object;
 mod parser;
