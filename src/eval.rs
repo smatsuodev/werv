@@ -75,7 +75,7 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
 }
 
 fn eval_block(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
-    eval_statements(stmts, env)
+    eval_statements(stmts, &mut env.clone())
 }
 
 fn eval_if_expr(

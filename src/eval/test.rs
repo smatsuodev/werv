@@ -6,6 +6,8 @@ use crate::{
     parser::Parser,
 };
 
+use super::{error::EvalError::*, EResult};
+
 fn loop_test<T, const N: usize>(input: [T; N], expect: [Object; N])
 where
     T: ToString,
@@ -18,6 +20,21 @@ where
         let object = eval(program, &mut env).unwrap();
 
         assert_eq!(object, expect[i].clone());
+    }
+}
+
+fn loop_test_res<T, const N: usize>(input: [T; N], expect: [EResult; N])
+where
+    T: ToString,
+{
+    for i in 0..N {
+        let l = Lexer::new(input[i].to_string());
+        let mut p = Parser::new(l);
+        let program = p.parse().unwrap();
+        let mut env = Environment::new();
+        let object = eval(program, &mut env);
+
+        assert_eq!(object, expect[i]);
     }
 }
 
@@ -98,4 +115,12 @@ fn eval_let_stmt_test() {
     let expect = [Integer(220)];
 
     loop_test(input, expect);
+}
+
+#[test]
+fn eval_scope_test() {
+    let input = ["{let a=10;};a;", "let a = 10; {let b=10; a+b;};"];
+    let expect = [Err(EvalIdentError), Ok(Integer(20))];
+
+    loop_test_res(input, expect);
 }
