@@ -6,7 +6,7 @@ use crate::{
         BinaryExprKind::*, Expression, Expression::*, Node, Statement, Statement::*,
         UnaryExprKind::*,
     },
-    lexer::Lexer,
+    lexer::{error::LexerError, Lexer},
     token::{Token, TokenKind},
 };
 
@@ -357,7 +357,7 @@ impl Parser {
             return self.parse_ident();
         }
 
-        if self.is_cur(TokenKind::DoubleQuote) {
+        if self.is_cur(TokenKind::StringBody) {
             return self.parse_string();
         }
 
@@ -404,11 +404,7 @@ impl Parser {
     }
 
     fn parse_string(&mut self) -> PResult<Expression> {
-        self.consume(TokenKind::DoubleQuote)?;
-
-        let str = self.consume(TokenKind::Ident)?;
-
-        self.consume(TokenKind::DoubleQuote)?;
+        let str = self.consume(TokenKind::StringBody)?;
 
         Ok(Str(str.literal()))
     }
@@ -432,9 +428,11 @@ impl Parser {
         self.cur_token.kind() == TokenKind::EOF
     }
 
-    fn next_token(&mut self) {
+    fn next_token(&mut self) -> Option<LexerError> {
         self.cur_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
+        self.peek_token = self.lexer.next_token().ok()?;
+
+        None
     }
 
     fn consume(&mut self, kind: TokenKind) -> PResult<Token> {
@@ -444,7 +442,8 @@ impl Parser {
 
         let token = self.cur_token.clone();
 
-        self.next_token();
+        self.next_token()
+            .map_or(Ok(()), |e| Err(ParseNextTokenError(e)))?;
         Ok(token)
     }
 

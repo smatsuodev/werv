@@ -1,6 +1,9 @@
+pub mod error;
 #[cfg(test)]
 mod test;
 use crate::token::{Token, TokenKind};
+
+use self::error::{LexerError, LexerError::*};
 
 pub struct Lexer {
     input: String,
@@ -20,13 +23,15 @@ impl Lexer {
         l
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
 
         let c = self.ch;
         let mut literal = c.to_string();
         let kind = match c {
-            '"' => TokenKind::DoubleQuote,
+            '"' => {
+                return Ok(Token::new(TokenKind::StringBody, self.read_string()?));
+            }
             '<' => {
                 if self.peek_char() == '=' {
                     self.read_char();
@@ -80,18 +85,18 @@ impl Lexer {
             '}' => TokenKind::RBrace,
             '\0' => TokenKind::EOF,
             _ if self.is_number() => {
-                return Token::new(TokenKind::Number, self.read_number());
+                return Ok(Token::new(TokenKind::Number, self.read_number()));
             }
             _ if self.is_ident_head() => {
                 let literal = self.read_ident();
 
-                return Token::new(TokenKind::lookup_kind(&literal), literal);
+                return Ok(Token::new(TokenKind::lookup_kind(&literal), literal));
             }
             _ => TokenKind::Unknown,
         };
 
         self.read_char();
-        Token::new(kind, literal)
+        Ok(Token::new(kind, literal))
     }
 
     fn skip_whitespace(&mut self) {
@@ -103,6 +108,26 @@ impl Lexer {
     fn is_whitespace(&self) -> bool {
         let c = self.ch;
         c == ' ' || c == '\t' || c == '\r' || c == '\n'
+    }
+
+    fn read_string(&mut self) -> Result<String, LexerError> {
+        self.read_char();
+
+        let pos = self.position;
+
+        while self.ch != '"' {
+            if self.ch == '\0' {
+                return Err(LexerReadStringError);
+            }
+
+            self.read_char();
+        }
+
+        let new_pos = self.position;
+
+        self.read_char();
+
+        Ok(self.input[pos..new_pos].to_string())
     }
 
     fn read_ident(&mut self) -> String {

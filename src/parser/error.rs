@@ -1,4 +1,4 @@
-use crate::token::TokenKind;
+use crate::{lexer::error::LexerError, token::TokenKind};
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -7,6 +7,7 @@ pub enum ParseError {
     ParseConsumeError(TokenKind),
     ParseIntegerError,
     ParseArgsError,
+    ParseNextTokenError(LexerError),
 }
 
 use ParseError::*;
@@ -18,8 +19,9 @@ impl ToString for ParseError {
             ParseConsumeError(kind) => format!("ParseConsumeError({:?})", kind),
             ParseIntegerError => String::from("ParseIntegerError"),
             ParseArgsError => String::from("ParseArgsError"),
+            ParseNextTokenError(e) => e.to_string(),
         };
 
-        format!("Parser Error: {}", body)
+        format!("Parser Error: {body}")
     }
 }
