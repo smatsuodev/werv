@@ -95,7 +95,6 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
         Expression::Boolean(b) => eval_boolean(b),
         Expression::Ident(i) => eval_ident(i, env),
         Expression::CallExpr { name, args } => eval_call_expr(name, args, env),
-        _ => Err(EvalExpressionError),
     }
 }
 
