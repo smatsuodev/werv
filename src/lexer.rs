@@ -25,6 +25,7 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
+        self.skip_comment();
 
         let c = self.ch;
         let mut literal = c.to_string();
@@ -97,6 +98,41 @@ impl Lexer {
 
         self.read_char();
         Ok(Token::new(kind, literal))
+    }
+
+    fn skip_comment(&mut self) {
+        if self.ch == '/' {
+            if self.peek_char() == '/' {
+                self.skip_line_comment();
+            } else if self.peek_char() == '*' {
+                self.skip_multiline_comment();
+            }
+        }
+    }
+
+    fn skip_line_comment(&mut self) {
+        while self.ch != '\n' {
+            self.read_char();
+        }
+
+        self.skip_whitespace();
+        self.skip_comment();
+    }
+
+    fn skip_multiline_comment(&mut self) {
+        self.read_char();
+        self.read_char();
+        loop {
+            if self.ch == '*' && self.peek_char() == '/' {
+                break;
+            }
+            self.read_char();
+        }
+
+        self.read_char();
+        self.read_char();
+        self.skip_whitespace();
+        self.skip_comment();
     }
 
     fn skip_whitespace(&mut self) {

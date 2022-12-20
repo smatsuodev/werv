@@ -9,8 +9,20 @@ fn fib(n) = fib(n-1) + fib(n-2);
 fn add(a, b) = {
     return a + b;
 };
+// this is a test comment
+/*
+this is a 
+
+comment !!!
+!!!
+ */
+
+ // bla
 fn only_odd(n) = if n % 2 { n } else { 0 };
-if 1==1 { !false } else if true { !true };
+if 1==1 { 
+    // block inner comment
+    !false 
+} else if true { !true };
 1!=10;
 1<10;
 1<=10;
