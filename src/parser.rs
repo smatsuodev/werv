@@ -357,7 +357,7 @@ impl Parser {
             return self.parse_ident();
         }
 
-        if self.is_cur(TokenKind::Str) {
+        if self.is_cur(TokenKind::DoubleQuote) {
             return self.parse_string();
         }
 
@@ -404,9 +404,13 @@ impl Parser {
     }
 
     fn parse_string(&mut self) -> PResult<Expression> {
-        let token = self.consume(TokenKind::Str)?;
+        self.consume(TokenKind::DoubleQuote)?;
 
-        Ok(Str(token.literal()))
+        let str = self.consume(TokenKind::Ident)?;
+
+        self.consume(TokenKind::DoubleQuote)?;
+
+        Ok(Str(str.literal()))
     }
 
     fn parse_integer(&mut self) -> PResult<Expression> {

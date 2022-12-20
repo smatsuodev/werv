@@ -26,9 +26,7 @@ impl Lexer {
         let c = self.ch;
         let mut literal = c.to_string();
         let kind = match c {
-            '"' => {
-                return Token::new(TokenKind::Str, self.read_string());
-            }
+            '"' => TokenKind::DoubleQuote,
             '<' => {
                 if self.peek_char() == '=' {
                     self.read_char();
@@ -105,21 +103,6 @@ impl Lexer {
     fn is_whitespace(&self) -> bool {
         let c = self.ch;
         c == ' ' || c == '\t' || c == '\r' || c == '\n'
-    }
-
-    fn read_string(&mut self) -> String {
-        self.read_char();
-
-        let pos = self.position;
-
-        while self.ch != '"' {
-            self.read_char();
-        }
-
-        let new_pos = self.position;
-
-        self.read_char();
-        self.input[pos..new_pos].to_string()
     }
 
     fn read_ident(&mut self) -> String {

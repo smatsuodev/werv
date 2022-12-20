@@ -122,7 +122,9 @@ if 1==1 { !false } else if true { !true };
         (Ge, ">="),
         (Number, "10"),
         (SemiColon, ";"),
-        (Str, "input123"),
+        (DoubleQuote, "\""),
+        (Ident, "input123"),
+        (DoubleQuote, "\""),
         (SemiColon, ";"),
         (EOF, "\0"),
     ];
