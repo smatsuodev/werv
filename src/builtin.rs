@@ -19,6 +19,14 @@ pub fn call_builtin(
             println!("{}", eval(args[0].clone(), env).or(Err(()))?);
             Ok(NULL)
         }
+        "print" => {
+            if args.len() != 1 {
+                return Err(());
+            }
+
+            print!("{}", eval(args[0].clone(), env).or(Err(()))?);
+            Ok(NULL)
+        }
         _ => Err(()),
     }
 }
