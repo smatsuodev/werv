@@ -26,6 +26,12 @@ fn eval_statements(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
 
     for s in stmts {
         result = eval(s, env)?;
+
+        // もしevalが値を返したなら、BlockReturnStatementかReturnStatementが評価されたということなので、
+        // 即座に値を返す
+        if result != NULL {
+            return Ok(result);
+        }
     }
 
     Ok(result)
@@ -40,7 +46,7 @@ fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
         Statement::FunctionDefStatement { name, params, body } => {
             eval_fn_def_stmt(name, params, body, env)
         }
-        _ => Err(EvalStatementError),
+        Statement::ReturnStatement(e) => eval(e, env),
     }
 }
 
