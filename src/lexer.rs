@@ -78,10 +78,10 @@ impl Lexer {
             '{' => TokenKind::LBrace,
             '}' => TokenKind::RBrace,
             '\0' => TokenKind::EOF,
-            c if self.is_number() => {
+            _ if self.is_number() => {
                 return Token::new(TokenKind::Number, self.read_number());
             }
-            c if self.is_ident_head() => {
+            _ if self.is_ident_head() => {
                 let literal = self.read_ident();
 
                 return Token::new(TokenKind::lookup_kind(&literal), literal);
