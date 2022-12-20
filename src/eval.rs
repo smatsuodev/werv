@@ -5,6 +5,7 @@ mod test;
 use self::error::{EvalError, EvalError::*};
 use crate::{
     ast::{BinaryExprKind, Expression, Node, Statement, UnaryExprKind},
+    builtin::call_builtin,
     environment::Environment,
     object::{Object, Object::*, NULL},
 };
@@ -100,6 +101,12 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
 }
 
 fn eval_call_expr(name: Box<Expression>, args: Vec<Expression>, env: &mut Environment) -> EResult {
+    if let Expression::Ident(name) = name.as_ref() {
+        if let Ok(res) = call_builtin(name, &args, env) {
+            return Ok(res);
+        }
+    }
+
     let name = eval(*name, env)?;
 
     if let Function { params, body } = name {

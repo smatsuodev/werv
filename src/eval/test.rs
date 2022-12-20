@@ -2,7 +2,10 @@ use crate::{
     environment::Environment,
     eval::eval,
     lexer::Lexer,
-    object::Object::{self, *},
+    object::{
+        Object::{self, *},
+        NULL,
+    },
     parser::Parser,
 };
 
@@ -191,8 +194,9 @@ fn eval_fn_test() {
             fib(n-1) + fib(n-2)
         };
         fib(5);",
+        r#"println("hello");"#,
     ];
-    let expect = [Integer(20), Integer(3628800), Integer(5)];
+    let expect = [Integer(20), Integer(3628800), Integer(5), NULL];
 
     loop_test(input, expect);
 }
