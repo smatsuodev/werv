@@ -124,3 +124,29 @@ fn eval_scope_test() {
 
     loop_test_res(input, expect);
 }
+
+#[test]
+fn eval_fn_test() {
+    let input = [
+        r"
+        fn add(x,y)=x+y; 
+        add(10,10);",
+        r"
+        fn fact(x) = if x<=1 {1} else {x*fact(x-1)}; 
+        fact(10);",
+        r"
+        fn fib(n) = {
+            if n==0 {
+                0
+            } else if n==1 {
+                1
+            } else {
+                fib(n-1) + fib(n-2)
+            }
+        };
+        fib(5);",
+    ];
+    let expect = [Integer(20), Integer(3628800), Integer(5)];
+
+    loop_test(input, expect);
+}

@@ -6,4 +6,6 @@ pub enum EvalError {
     EvalUnaryExpressionError,
     EvalBinaryExpressionError,
     EvalIdentError,
+    EvalFunctionDefinitionStatementError,
+    EvalCallExprError,
 }

@@ -37,8 +37,26 @@ fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
         Statement::ExprStatement(e) => eval(e, env),
         Statement::BlockReturnStatement(e) => eval_block_return_stmt(e, env),
         Statement::LetStatement { name, value } => eval_let_stmt(name, value, env),
+        Statement::FunctionDefStatement { name, params, body } => {
+            eval_fn_def_stmt(name, params, body, env)
+        }
         _ => Err(EvalStatementError),
     }
+}
+
+fn eval_fn_def_stmt(
+    name: Expression,
+    params: Vec<Expression>,
+    body: Expression,
+    env: &mut Environment,
+) -> EResult {
+    if let Expression::Ident(name) = name {
+        env.insert(name, Function { params, body });
+    } else {
+        return Err(EvalFunctionDefinitionStatementError);
+    }
+
+    Ok(NULL)
 }
 
 fn eval_let_stmt(name: Expression, value: Expression, env: &mut Environment) -> EResult {
@@ -70,8 +88,39 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
         Expression::Integer(i) => eval_integer(i),
         Expression::Boolean(b) => eval_boolean(b),
         Expression::Ident(i) => eval_ident(i, env),
+        Expression::CallExpr { name, args } => eval_call_expr(name, args, env),
         _ => Err(EvalExpressionError),
     }
+}
+
+fn eval_call_expr(name: Box<Expression>, args: Vec<Expression>, env: &mut Environment) -> EResult {
+    let name = eval(*name, env)?;
+
+    if let Function { params, body } = name {
+        if params.len() != args.len() {
+            return Err(EvalCallExprError);
+        }
+
+        let mut env = env.clone();
+
+        // map params and args and insert to env
+        for i in 0..params.len() {
+            let param = &params[i];
+            let arg = args[i].clone();
+
+            if let Expression::Ident(param) = param {
+                let arg = eval(arg, &mut env)?;
+
+                env.insert(param.clone(), arg);
+            } else {
+                return Err(EvalCallExprError);
+            }
+        }
+
+        return eval(body, &mut env);
+    }
+
+    Err(EvalCallExprError)
 }
 
 fn eval_block(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
