@@ -3,7 +3,7 @@ use crate::token::{Token, TokenKind::*};
 
 #[test]
 fn next_token_test() {
-    let input = r"
+    let input = r#"
 let _aA10 = 1 + 2 - 3 * 4 / 5; 
 fn fib(n) = fib(n-1) + fib(n-2);
 fn add(a, b) = {
@@ -15,7 +15,9 @@ if 1==1 { !false } else if true { !true };
 1<10;
 1<=10;
 1>10;
-1>=10;";
+1>=10;
+"input123";
+"#;
     let expect = [
         (Let, "let"),
         (Ident, "_aA10"),
@@ -119,6 +121,8 @@ if 1==1 { !false } else if true { !true };
         (Number, "1"),
         (Ge, ">="),
         (Number, "10"),
+        (SemiColon, ";"),
+        (Str, "input123"),
         (SemiColon, ";"),
         (EOF, "\0"),
     ];

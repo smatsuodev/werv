@@ -95,6 +95,7 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
         Expression::Boolean(b) => eval_boolean(b),
         Expression::Ident(i) => eval_ident(i, env),
         Expression::CallExpr { name, args } => eval_call_expr(name, args, env),
+        Expression::Str(s) => eval_string(s),
     }
 }
 
@@ -178,13 +179,24 @@ fn eval_binary_expr(
         return Ok(Boolean(lhs != rhs));
     };
 
-    if let (Integer(lhs), Integer(rhs)) = (lhs, rhs) {
+    if let (Integer(lhs), Integer(rhs)) = (&lhs, &rhs) {
         let result = match kind {
             BinaryExprKind::Add => Integer(lhs + rhs),
             BinaryExprKind::Sub => Integer(lhs - rhs),
             BinaryExprKind::Mul => Integer(lhs * rhs),
             BinaryExprKind::Div => Integer(lhs / rhs),
             BinaryExprKind::Mod => Integer(lhs % rhs),
+            BinaryExprKind::Lt => Boolean(lhs < rhs),
+            BinaryExprKind::Le => Boolean(lhs <= rhs),
+            BinaryExprKind::Gt => Boolean(lhs > rhs),
+            BinaryExprKind::Ge => Boolean(lhs >= rhs),
+            _ => return Err(EvalBinaryExpressionError),
+        };
+
+        return Ok(result);
+    } else if let (Str(lhs), Str(rhs)) = (lhs, rhs) {
+        let result = match kind {
+            BinaryExprKind::Add => Str(lhs + &rhs),
             BinaryExprKind::Lt => Boolean(lhs < rhs),
             BinaryExprKind::Le => Boolean(lhs <= rhs),
             BinaryExprKind::Gt => Boolean(lhs > rhs),
@@ -204,6 +216,10 @@ fn eval_integer(i: isize) -> EResult {
 
 fn eval_boolean(b: bool) -> EResult {
     Ok(Boolean(b))
+}
+
+fn eval_string(s: String) -> EResult {
+    Ok(Str(s))
 }
 
 fn eval_ident(i: String, env: &mut Environment) -> EResult {

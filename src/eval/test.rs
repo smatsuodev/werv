@@ -10,7 +10,7 @@ use super::{error::EvalError::*, EResult};
 
 fn loop_test<T, const N: usize>(input: [T; N], expect: [Object; N])
 where
-    T: ToString,
+    T: ToString + std::fmt::Debug,
 {
     for i in 0..N {
         let l = Lexer::new(input[i].to_string());
@@ -19,7 +19,7 @@ where
         let mut env = Environment::new();
         let object = eval(program, &mut env).unwrap();
 
-        assert_eq!(object, expect[i].clone());
+        assert_eq!(object, expect[i].clone(), "{:?}", input[i]);
     }
 }
 
@@ -49,8 +49,35 @@ fn eval_integer_test() {
 #[test]
 fn eval_binary_expr_test() {
     let input = [
-        "1+2-3;", "3*4;", "8/2;", "100%11;", "20--10;", "1==1;", "1!=2;", "1<2;", "1<=2;", "2>1;",
-        "2>=1;", "1==2;", "1!=1;", "1<1;", "1<=0;", "2>2;", "1>=2;",
+        "1+2-3;",
+        "3*4;",
+        "8/2;",
+        "100%11;",
+        "20--10;",
+        "1==1;",
+        "1!=2;",
+        "1<2;",
+        "1<=2;",
+        "2>1;",
+        "2>=1;",
+        "1==2;",
+        "1!=1;",
+        "1<1;",
+        "1<=0;",
+        "2>2;",
+        "1>=2;",
+        r#""hello"=="hello";"#,
+        r#""hello"!="world";"#,
+        r#""abc"<"abd";"#,
+        r#""abc"<="abd";"#,
+        r#""abc">"ABC";"#,
+        r#""abc">="ABC";"#,
+        r#""hello"=="world";"#,
+        r#""hello"!="hello";"#,
+        r#""abc"<"abc";"#,
+        r#""abc"<="ABC";"#,
+        r#""abc">"abc";"#,
+        r#""ABC">="abc";"#,
     ];
     let expect = [
         Integer(0),
@@ -58,6 +85,18 @@ fn eval_binary_expr_test() {
         Integer(4),
         Integer(1),
         Integer(30),
+        Boolean(true),
+        Boolean(true),
+        Boolean(true),
+        Boolean(true),
+        Boolean(true),
+        Boolean(true),
+        Boolean(false),
+        Boolean(false),
+        Boolean(false),
+        Boolean(false),
+        Boolean(false),
+        Boolean(false),
         Boolean(true),
         Boolean(true),
         Boolean(true),
@@ -103,8 +142,14 @@ fn eval_if_expr_test() {
         "if true { 0 };",
         "if false { 0 } else if true { 1 };",
         "if false { 0 } else if false { 1 } else { 2 };",
+        r#"if "hello" == "world" { "hello" } else { "world" };"#,
     ];
-    let expect = [Integer(0), Integer(1), Integer(2)];
+    let expect = [
+        Integer(0),
+        Integer(1),
+        Integer(2),
+        Str(String::from("world")),
+    ];
 
     loop_test(input, expect);
 }
@@ -150,4 +195,12 @@ fn eval_fn_test() {
     let expect = [Integer(20), Integer(3628800), Integer(5)];
 
     loop_test(input, expect);
+}
+
+#[test]
+fn eval_string_test() {
+    let input = [r#""input123";"#];
+    let expect = [Str(String::from("input123"))];
+
+    loop_test(input, expect)
 }

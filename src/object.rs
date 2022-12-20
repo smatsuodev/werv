@@ -10,6 +10,7 @@ pub enum Object {
     _Null,
     Integer(isize),
     Boolean(bool),
+    Str(String),
     Function {
         /// Vector of ident
         params: Vec<Expression>,
@@ -28,6 +29,7 @@ impl std::fmt::Display for Object {
                 Object::_Null => String::from("null"),
                 Object::Integer(i) => i.to_string(),
                 Object::Boolean(b) => b.to_string(),
+                Object::Str(s) => s.to_string(),
                 Object::Function { .. } => String::from("[Function]"),
             }
         )

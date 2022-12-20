@@ -42,6 +42,7 @@ if false { true } else { !false };
 1>1;
 1<=1;
 1>=1;
+"input123";
 "#];
     let expect = [Node::Program(vec![
         LetStatement {
@@ -218,6 +219,7 @@ if false { true } else { !false };
             lhs: Box::new(Integer(1)),
             rhs: Box::new(Integer(1)),
         }),
+        ExprStatement(Str("input123".into())),
     ])];
 
     loop_test(input, expect, |p| p.parse().unwrap());

@@ -357,6 +357,10 @@ impl Parser {
             return self.parse_ident();
         }
 
+        if self.is_cur(TokenKind::Str) {
+            return self.parse_string();
+        }
+
         return self.parse_integer();
     }
 
@@ -397,6 +401,12 @@ impl Parser {
 
         self.consume(TokenKind::RParen)?;
         return Ok(expr);
+    }
+
+    fn parse_string(&mut self) -> PResult<Expression> {
+        let token = self.consume(TokenKind::Str)?;
+
+        Ok(Str(token.literal()))
     }
 
     fn parse_integer(&mut self) -> PResult<Expression> {

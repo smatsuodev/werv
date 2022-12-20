@@ -53,6 +53,8 @@ pub enum TokenKind {
     Ident,
     /// 数字
     Number,
+    /// 文字列
+    Str,
 
     Unknown,
     EOF,
