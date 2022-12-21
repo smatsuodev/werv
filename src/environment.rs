@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::object::Object;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Environment {
     store: HashMap<String, Object>,
 }
@@ -13,8 +13,8 @@ impl Environment {
         }
     }
 
-    pub fn get(&self, key: String) -> Option<&Object> {
-        self.store.get(&key)
+    pub fn get(&self, key: &String) -> Option<&Object> {
+        self.store.get(key)
     }
 
     pub fn insert(&mut self, key: String, value: Object) -> Option<Object> {

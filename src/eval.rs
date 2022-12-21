@@ -40,8 +40,7 @@ fn eval_statements(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
 
 fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
     match s {
-        // TODO: 今はデバッグのためにExprStatementが値を返すようになっているが、本来は返さない
-        Statement::ExprStmt(e) => eval(e, env),
+        Statement::ExprStmt { is_null, expr } => eval_expr_stmt(is_null, expr, env),
         Statement::LetStmt { name, value } => eval_let_stmt(name, value, env),
         Statement::LetFnStmt { name, params, body } => eval_fn_def_stmt(name, params, body, env),
         Statement::ReturnStmt(e) => eval(e, env),
@@ -49,9 +48,23 @@ fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
     }
 }
 
+fn eval_expr_stmt(is_null: bool, expr: Expression, env: &mut Environment) -> EResult {
+    if is_null {
+        eval(expr, env)?;
+
+        Ok(NULL)
+    } else {
+        eval(expr, env)
+    }
+}
+
 fn eval_while_stmt(condition: Expression, body: Expression, env: &mut Environment) -> EResult {
-    while let Boolean(true) = eval(condition.clone(), env)? {
-        eval(body.clone(), env)?;
+    loop {
+        if let Boolean(true) = eval(condition.clone(), env)? {
+            eval(body.clone(), env)?;
+        } else {
+            break;
+        }
     }
 
     Ok(NULL)
@@ -99,10 +112,15 @@ fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
         Expression::Ident(i) => eval_ident(i, env),
         Expression::CallExpr { name, args } => eval_call_expr(name, args, env),
         Expression::Str(s) => eval_string(s),
+        Expression::AssignExpr { name, value } => eval_assign_expr(name, value, env),
     }
 }
 
-fn eval_call_expr(name: Box<Expression>, args: Vec<Expression>, env: &mut Environment) -> EResult {
+fn eval_call_expr<'a>(
+    name: Box<Expression>,
+    args: Vec<Expression>,
+    env: &mut Environment,
+) -> EResult {
     if let Expression::Ident(name) = name.as_ref() {
         if let Ok(res) = call_builtin(name, &args, env) {
             return Ok(res);
@@ -232,5 +250,21 @@ fn eval_string(s: String) -> EResult {
 }
 
 fn eval_ident(i: String, env: &mut Environment) -> EResult {
-    Ok(env.get(i).ok_or(EvalIdentError)?.clone())
+    Ok(env.get(&i).ok_or(EvalIdentError)?.clone())
+}
+
+fn eval_assign_expr(
+    name: Box<Expression>,
+    value: Box<Expression>,
+    env: &mut Environment,
+) -> EResult {
+    if let Expression::Ident(name) = *name {
+        let value = eval(*value, env)?;
+
+        env.insert(name, value);
+
+        return Ok(NULL);
+    }
+
+    Err(EvalAssignExprError)
 }

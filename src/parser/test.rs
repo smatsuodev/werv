@@ -13,8 +13,10 @@ where
     for i in 0..N {
         let l = Lexer::new(input[i].to_string());
         let mut p = Parser::new(l);
+        let a = f(&mut p);
+        let b = expect[i].clone();
 
-        assert_eq!(f(&mut p), expect[i].clone(), "{}", input[i].to_string());
+        assert_eq!(a, b, "{:#?}\n{:#?}\n{}", a, b, input[i].to_string());
     }
 }
 
@@ -33,16 +35,16 @@ let f(x, y) = {
 
     return nx + ny;
 };
-if a%2 { a } else { 0 };
-if false { true } else { !false };
-20 - -10;
-1==1;
-1!=1;
-1<1;
-1>1;
-1<=1;
-1>=1;
-"input123";
+if a%2 { a } else { 0 }
+if false { true } else { !false }
+20 - -10
+1==1
+1!=1
+1<1
+1>1
+1<=1
+1>=1
+"input123"
 while true {}
 while false {}
 while 1 {}
@@ -133,17 +135,20 @@ while true println("hello")
                 ],
             },
         },
-        ExprStmt(CallExpr {
-            name: Box::new(Ident("print".into())),
-            args: vec![BinaryExpr {
-                kind: Add,
-                lhs: Box::new(CallExpr {
-                    name: Box::new(Ident("fib".into())),
-                    args: vec![Integer(10)],
-                }),
-                rhs: Box::new(Integer(10)),
-            }],
-        }),
+        ExprStmt {
+            is_null: true,
+            expr: CallExpr {
+                name: Box::new(Ident("print".into())),
+                args: vec![BinaryExpr {
+                    kind: Add,
+                    lhs: Box::new(CallExpr {
+                        name: Box::new(Ident("fib".into())),
+                        args: vec![Integer(10)],
+                    }),
+                    rhs: Box::new(Integer(10)),
+                }],
+            },
+        },
         LetFnStmt {
             name: Ident("f".into()),
             params: vec![Ident("x".into()), Ident("y".into())],
@@ -171,62 +176,104 @@ while true println("hello")
                 }),
             ]),
         },
-        ExprStmt(IfExpr {
-            condition: Box::new(BinaryExpr {
-                kind: Mod,
-                lhs: Box::new(Ident("a".into())),
-                rhs: Box::new(Integer(2)),
-            }),
-            consequence: Box::new(BlockExpr(vec![ExprStmt(Ident("a".into()))])),
-            alternative: Some(Box::new(BlockExpr(vec![ExprStmt(Integer(0))]))),
-        }),
-        ExprStmt(IfExpr {
-            condition: Box::new(Boolean(false)),
-            consequence: Box::new(BlockExpr(vec![ExprStmt(Boolean(true))])),
-            alternative: Some(Box::new(BlockExpr(vec![ExprStmt(UnaryExpr {
-                kind: Not,
-                expr: Box::new(Boolean(false)),
-            })]))),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Sub,
-            lhs: Box::new(Integer(20)),
-            rhs: Box::new(UnaryExpr {
-                kind: Minus,
-                expr: Box::new(Integer(10)),
-            }),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Eq,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Ne,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Lt,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Gt,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Le,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(BinaryExpr {
-            kind: Ge,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(1)),
-        }),
-        ExprStmt(Str("input123".into())),
+        ExprStmt {
+            is_null: false,
+            expr: IfExpr {
+                condition: Box::new(BinaryExpr {
+                    kind: Mod,
+                    lhs: Box::new(Ident("a".into())),
+                    rhs: Box::new(Integer(2)),
+                }),
+                consequence: Box::new(BlockExpr(vec![ExprStmt {
+                    is_null: false,
+                    expr: Ident("a".into()),
+                }])),
+                alternative: Some(Box::new(BlockExpr(vec![ExprStmt {
+                    is_null: false,
+                    expr: Integer(0),
+                }]))),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: IfExpr {
+                condition: Box::new(Boolean(false)),
+                consequence: Box::new(BlockExpr(vec![ExprStmt {
+                    is_null: false,
+                    expr: Boolean(true),
+                }])),
+                alternative: Some(Box::new(BlockExpr(vec![ExprStmt {
+                    is_null: false,
+                    expr: UnaryExpr {
+                        kind: Not,
+                        expr: Box::new(Boolean(false)),
+                    },
+                }]))),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Sub,
+                lhs: Box::new(Integer(20)),
+                rhs: Box::new(UnaryExpr {
+                    kind: Minus,
+                    expr: Box::new(Integer(10)),
+                }),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Eq,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Ne,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Lt,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Gt,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Le,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: BinaryExpr {
+                kind: Ge,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(1)),
+            },
+        },
+        ExprStmt {
+            is_null: false,
+            expr: Str("input123".into()),
+        },
         WhileStmt {
             condition: Boolean(true),
             body: BlockExpr(vec![]),
@@ -531,13 +578,25 @@ fn parse_expression_test() {
                 lhs: Box::new(Ident("a".into())),
                 rhs: Box::new(Integer(2)),
             }),
-            consequence: Box::new(BlockExpr(vec![ExprStmt(Ident("a".into()))])),
-            alternative: Some(Box::new(BlockExpr(vec![ExprStmt(Integer(0))]))),
+            consequence: Box::new(BlockExpr(vec![ExprStmt {
+                is_null: false,
+                expr: Ident("a".into()),
+            }])),
+            alternative: Some(Box::new(BlockExpr(vec![ExprStmt {
+                is_null: false,
+                expr: Integer(0),
+            }]))),
         },
         IfExpr {
             condition: Box::new(Boolean(false)),
-            consequence: Box::new(BlockExpr(vec![ExprStmt(Boolean(true))])),
-            alternative: Some(Box::new(BlockExpr(vec![ExprStmt(Boolean(false))]))),
+            consequence: Box::new(BlockExpr(vec![ExprStmt {
+                is_null: false,
+                expr: Boolean(true),
+            }])),
+            alternative: Some(Box::new(BlockExpr(vec![ExprStmt {
+                is_null: false,
+                expr: Boolean(false),
+            }]))),
         },
     ];
 
@@ -553,8 +612,14 @@ fn parse_if_test() {
             lhs: Box::new(Ident("a".into())),
             rhs: Box::new(Integer(2)),
         }),
-        consequence: Box::new(BlockExpr(vec![ExprStmt(Ident("a".into()))])),
-        alternative: Some(Box::new(BlockExpr(vec![ExprStmt(Integer(0))]))),
+        consequence: Box::new(BlockExpr(vec![ExprStmt {
+            is_null: false,
+            expr: Ident("a".into()),
+        }])),
+        alternative: Some(Box::new(BlockExpr(vec![ExprStmt {
+            is_null: false,
+            expr: Integer(0),
+        }]))),
     }];
 
     loop_test(input, expect, |p| p.parse_if_expr().unwrap());

@@ -160,12 +160,14 @@ impl Parser {
     /// expr_stmt = expr ";"?
     fn parse_expr_stmt(&mut self) -> PResult<Statement> {
         let expr = self.parse_expr()?;
+        let mut is_null = false;
 
         if self.is_cur(TokenKind::SemiColon) {
             self.next_token();
+            is_null = true;
         }
 
-        Ok(ExprStmt(expr))
+        Ok(ExprStmt { is_null, expr })
     }
 
     fn parse_expr(&mut self) -> PResult<Expression> {
@@ -338,7 +340,7 @@ impl Parser {
         self.parse_primary()
     }
 
-    /// primary = integer | ident ( "(" ( expr ( "," expr )* )? ")" )? | str | bool | "(" expr ")"
+    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | "(" expr ")"
     fn parse_primary(&mut self) -> PResult<Expression> {
         // "(" expr ")"
         if self.consume(TokenKind::LParen).is_ok() {
@@ -351,6 +353,13 @@ impl Parser {
         // ident ( "(" ( expr ( "," expr )* )? ")" )?
         if self.is_cur(TokenKind::Ident) {
             let name = self.parse_ident()?;
+
+            if self.consume(TokenKind::Assign).is_ok() {
+                return Ok(AssignExpr {
+                    name: Box::new(name),
+                    value: Box::new(self.parse_expr()?),
+                });
+            }
 
             if self.consume(TokenKind::LParen).is_ok() {
                 let mut args = Vec::new();

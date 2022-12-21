@@ -21,7 +21,10 @@ pub enum Statement {
         condition: Expression,
         body: Expression,
     },
-    ExprStmt(Expression),
+    ExprStmt {
+        is_null: bool,
+        expr: Expression,
+    },
 }
 impl Into<Node> for Statement {
     fn into(self) -> Node {
@@ -31,6 +34,10 @@ impl Into<Node> for Statement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    AssignExpr {
+        name: Box<Expression>,
+        value: Box<Expression>,
+    },
     UnaryExpr {
         kind: UnaryExprKind,
         expr: Box<Expression>,
