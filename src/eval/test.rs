@@ -177,19 +177,19 @@ fn eval_scope_test() {
 fn eval_fn_test() {
     let input = [
         r"
-        fn add(x,y)=x+y; 
+        let add(x,y)=x+y;
         add(10,10);",
         r"
-        fn fact(x) = if x<=1 {1} else {x*fact(x-1)}; 
+        let fact(x) = if (x<=1) 1 else x*fact(x-1); 
         fact(10);",
         r"
-        fn fib(n) = {
+        let fib(n) = {
             if n==0 {
                 return 0;
-            };
+            }
             if n==1 {
                 return 1;
-            };
+            }
 
             fib(n-1) + fib(n-2)
         };
