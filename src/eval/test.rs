@@ -208,3 +208,11 @@ fn eval_string_test() {
 
     loop_test(input, expect)
 }
+
+#[test]
+fn eval_while_test() {
+    todo!();
+    let input = [r#"
+    let i = 0;
+    "#];
+}

@@ -43,6 +43,13 @@ if false { true } else { !false };
 1<=1;
 1>=1;
 "input123";
+while true {}
+while false {}
+while 1 {}
+while 0 {}
+while 200 {}
+while rand_bool() {}
+while true println("hello")
 "#];
     let expect = [Node::Program(vec![
         LetStmt {
@@ -220,6 +227,40 @@ if false { true } else { !false };
             rhs: Box::new(Integer(1)),
         }),
         ExprStmt(Str("input123".into())),
+        WhileStmt {
+            condition: Boolean(true),
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: Boolean(false),
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: Integer(1),
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: Integer(0),
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: Integer(200),
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: CallExpr {
+                name: Box::new(Ident("rand_bool".into())),
+                args: vec![],
+            },
+            body: BlockExpr(vec![]),
+        },
+        WhileStmt {
+            condition: Boolean(true),
+            body: CallExpr {
+                name: Box::new(Ident("println".into())),
+                args: vec![Str("hello".into())],
+            },
+        },
     ])];
 
     loop_test(input, expect, |p| p.parse().unwrap());

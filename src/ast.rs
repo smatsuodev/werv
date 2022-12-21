@@ -17,6 +17,10 @@ pub enum Statement {
         body: Expression,
     },
     ReturnStmt(Expression),
+    WhileStmt {
+        condition: Expression,
+        body: Expression,
+    },
     ExprStmt(Expression),
 }
 impl Into<Node> for Statement {

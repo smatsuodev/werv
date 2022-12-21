@@ -73,10 +73,12 @@ impl Parser {
         Ok(Node::Program(stmts))
     }
 
+    /// stmt = let_stmt | return_stmt | while_stmt | expr_stmt
     fn parse_stmt(&mut self) -> PResult<Statement> {
         match self.cur_token.kind() {
             TokenKind::Let => self.parse_let_stmt(),
             TokenKind::Return => self.parse_return_stmt(),
+            TokenKind::While => self.parse_while_stmt(),
             _ => self.parse_expr_stmt(),
         }
     }
@@ -143,6 +145,16 @@ impl Parser {
         self.consume(TokenKind::SemiColon)?;
 
         Ok(ReturnStmt(expr))
+    }
+
+    /// while_stmt = "while" expr expr
+    fn parse_while_stmt(&mut self) -> PResult<Statement> {
+        self.consume(TokenKind::While)?;
+
+        let condition = self.parse_expr()?;
+        let body = self.parse_expr()?;
+
+        Ok(WhileStmt { condition, body })
     }
 
     /// expr_stmt = expr ";"?

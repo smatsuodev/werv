@@ -29,6 +29,7 @@ if 1==1 {
 1>10;
 1>=10;
 "input123";
+while true {}
 "#;
     let expect = [
         (Let, "let"),
@@ -132,6 +133,10 @@ if 1==1 {
         (SemiColon, ";"),
         (Str, "input123"),
         (SemiColon, ";"),
+        (While, "while"),
+        (True, "true"),
+        (LBrace, "{"),
+        (RBrace, "}"),
         (EOF, "\0"),
     ];
     let mut l = Lexer::new(input.to_string());

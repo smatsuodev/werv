@@ -47,6 +47,7 @@ pub enum TokenKind {
     Else,
     True,
     False,
+    While,
 
     /// 識別子
     Ident,
@@ -67,6 +68,7 @@ impl TokenKind {
             "else" => TokenKind::Else,
             "true" => TokenKind::True,
             "false" => TokenKind::False,
+            "while" => TokenKind::While,
             _ => TokenKind::Ident,
         }
     }

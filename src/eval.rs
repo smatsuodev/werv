@@ -45,7 +45,16 @@ fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
         Statement::LetStmt { name, value } => eval_let_stmt(name, value, env),
         Statement::LetFnStmt { name, params, body } => eval_fn_def_stmt(name, params, body, env),
         Statement::ReturnStmt(e) => eval(e, env),
+        Statement::WhileStmt { condition, body } => eval_while_stmt(condition, body, env),
     }
+}
+
+fn eval_while_stmt(condition: Expression, body: Expression, env: &mut Environment) -> EResult {
+    while let Boolean(true) = eval(condition.clone(), env)? {
+        eval(body.clone(), env)?;
+    }
+
+    Ok(NULL)
 }
 
 fn eval_fn_def_stmt(
