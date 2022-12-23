@@ -267,13 +267,23 @@ impl Environment {
             };
 
             return Ok(result);
-        } else if let (Str(lhs), Str(rhs)) = (lhs, rhs) {
+        } else if let (Str(lhs), Str(rhs)) = (&lhs, &rhs) {
             let result = match kind {
-                BinaryExprKind::Add => Str(lhs + &rhs),
+                BinaryExprKind::Add => Str(format!("{}{}", lhs, rhs)),
                 BinaryExprKind::Lt => Boolean(lhs < rhs),
                 BinaryExprKind::Le => Boolean(lhs <= rhs),
                 BinaryExprKind::Gt => Boolean(lhs > rhs),
                 BinaryExprKind::Ge => Boolean(lhs >= rhs),
+                _ => return Err(EvalBinaryExpressionError),
+            };
+
+            return Ok(result);
+        } else if let (Array(mut lhs), Array(mut rhs)) = (lhs, rhs) {
+            let result = match kind {
+                BinaryExprKind::Add => {
+                    lhs.append(&mut rhs);
+                    Array(lhs)
+                }
                 _ => return Err(EvalBinaryExpressionError),
             };
 

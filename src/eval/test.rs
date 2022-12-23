@@ -80,6 +80,10 @@ fn eval_binary_expr_test() {
         r#""abc"<="ABC""#,
         r#""abc">"abc""#,
         r#""ABC">="abc""#,
+        "[1,2,3]+[4,5,6]",
+        "[1,2,3]+[]",
+        "[]+[1,2,3]",
+        "[]+[]",
     ];
     let expect = [
         Integer(0),
@@ -111,6 +115,17 @@ fn eval_binary_expr_test() {
         Boolean(false),
         Boolean(false),
         Boolean(false),
+        Array(vec![
+            Integer(1),
+            Integer(2),
+            Integer(3),
+            Integer(4),
+            Integer(5),
+            Integer(6),
+        ]),
+        Array(vec![Integer(1), Integer(2), Integer(3)]),
+        Array(vec![Integer(1), Integer(2), Integer(3)]),
+        Array(vec![]),
     ];
 
     loop_test(input, expect);
