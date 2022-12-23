@@ -15,18 +15,41 @@ type EResult = Result<Object, EvalError>;
 #[derive(Clone, Debug)]
 pub struct Environment {
     store: BTreeMap<String, Object>,
+    outer: Option<Box<Environment>>,
 }
 impl Environment {
-    pub fn new() -> Environment {
+    pub fn new(outer: Option<Box<Environment>>) -> Environment {
         Environment {
             store: BTreeMap::new(),
+            outer,
         }
     }
     pub fn get(&self, key: &String) -> Option<&Object> {
-        self.store.get(key)
+        let inner = self.store.get(key);
+
+        if inner == None {
+            if let Some(outer) = &self.outer {
+                return outer.get(key);
+            }
+        }
+
+        inner
     }
     pub fn insert(&mut self, key: String, value: Object) -> Option<Object> {
         self.store.insert(key, value)
+    }
+    pub fn update(&mut self, key: String, value: Object) -> Result<Object, EvalError> {
+        let inner = self.store.get(&key);
+
+        if inner == None {
+            if let Some(outer) = &mut self.outer {
+                return outer.update(key, value);
+            }
+
+            return Err(EvalUpdateEnvError);
+        }
+
+        Ok(self.insert(key, value).unwrap())
     }
 
     pub fn eval(&mut self, node: impl Into<Node>) -> EResult {
@@ -79,7 +102,9 @@ impl Environment {
 
     fn eval_while_stmt(&mut self, condition: Expression, body: Expression) -> EResult {
         loop {
-            if let Boolean(true) = self.eval(condition.clone())? {
+            let cond = self.eval(condition.clone())?;
+
+            if let Boolean(true) = cond {
                 self.eval(body.clone())?;
             } else {
                 break;
@@ -149,7 +174,7 @@ impl Environment {
                 return Err(EvalCallExprError);
             }
 
-            let mut env = self.clone();
+            let mut env = Environment::new(Some(Box::new(self.clone())));
 
             // map params and args and insert to env
             for i in 0..params.len() {
@@ -172,7 +197,11 @@ impl Environment {
     }
 
     fn eval_block(&mut self, stmts: Vec<Statement>) -> EResult {
-        self.clone().eval_statements(stmts)
+        let mut env = Environment::new(Some(Box::new(self.clone())));
+        let result = env.eval_statements(stmts);
+
+        *self = *env.outer.unwrap();
+        result
     }
 
     fn eval_if_expr(
@@ -272,7 +301,7 @@ impl Environment {
         if let Expression::Ident(name) = *name {
             let value = self.eval(*value)?;
 
-            self.insert(name, value);
+            self.update(name, value)?;
 
             return Ok(NULL);
         }

@@ -5,7 +5,7 @@ use crate::{eval::Environment, lexer::Lexer, parser::Parser};
 const PROMPT: &'static str = ">> ";
 
 pub fn start() {
-    let mut env = Environment::new();
+    let mut env = Environment::new(None);
 
     loop {
         print!("{PROMPT}");

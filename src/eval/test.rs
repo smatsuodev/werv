@@ -18,7 +18,7 @@ where
         let l = Lexer::new(input[i].to_string());
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
-        let mut env = Environment::new();
+        let mut env = Environment::new(None);
         let object = env.eval(program).unwrap();
 
         assert_eq!(object, expect[i].clone(), "{:?}", input[i]);
@@ -33,7 +33,7 @@ where
         let l = Lexer::new(input[i].to_string());
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
-        let mut env = Environment::new();
+        let mut env = Environment::new(None);
         let object = env.eval(program);
 
         assert_eq!(object, expect[i]);
@@ -210,16 +210,28 @@ fn eval_string_test() {
 
 #[test]
 fn eval_while_test() {
-    let input = [r#"
+    let input = [
+        r#"
     let i = 0;
-    let N = 10;
+    let n = 10;
 
-    while i < N i = i + 1
-    
+    while i < n i = i + 1
 
     i
-    "#];
-    let expect = [Integer(10)];
+    "#,
+        r#"
+        let i = 0;
+        let n = 10;
+
+        while i < n {
+            i = i + 1;
+        }
+
+        i
+        "#,
+    ];
+
+    let expect = [Integer(10), Integer(10)];
 
     loop_test(input, expect);
 }

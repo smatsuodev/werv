@@ -7,6 +7,7 @@ pub enum EvalError {
     EvalFunctionDefinitionStatementError,
     EvalCallExprError,
     EvalAssignExprError,
+    EvalUpdateEnvError,
 }
 
 use EvalError::*;
@@ -20,6 +21,7 @@ impl ToString for EvalError {
             EvalFunctionDefinitionStatementError => "EvalFunctionDefinitionStatementError",
             EvalCallExprError => "EvalCallExprError",
             EvalAssignExprError => "EvalAssignExprError",
+            EvalUpdateEnvError => "EvalUpdateEnvError",
         };
 
         format!("Eval Error: {}", body)
