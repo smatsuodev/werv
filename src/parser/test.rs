@@ -872,6 +872,40 @@ fn parse_unary_test() {
 }
 
 #[test]
+fn parse_index_test() {
+    let input = ["[1,2,3][-1]", "[][zero()]", r#""hello"[0]"#, "vec[0][0]"];
+    let expect = [
+        IndexExpr {
+            expr: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
+            index: Box::new(UnaryExpr {
+                kind: Minus,
+                expr: Box::new(Integer(1)),
+            }),
+        },
+        IndexExpr {
+            expr: Box::new(Array(vec![])),
+            index: Box::new(CallExpr {
+                name: Box::new(Ident("zero".into())),
+                args: vec![],
+            }),
+        },
+        IndexExpr {
+            expr: Box::new(Str("hello".into())),
+            index: Box::new(Integer(0)),
+        },
+        IndexExpr {
+            expr: Box::new(IndexExpr {
+                expr: Box::new(Ident("vec".into())),
+                index: Box::new(Integer(0)),
+            }),
+            index: Box::new(Integer(0)),
+        },
+    ];
+
+    loop_test(input, expect, |p| p.parse_index().unwrap());
+}
+
+#[test]
 fn parse_primary_test() {
     let input = [
         "1234567890",
@@ -890,10 +924,6 @@ fn parse_primary_test() {
         "y",
         "nx",
         "ny",
-        "[1,2,3][-1]",
-        "[][zero()]",
-        r#""hello"[0]"#,
-        "vec[0]",
     ];
     let expect = [
         Integer(1234567890),
@@ -958,28 +988,6 @@ fn parse_primary_test() {
         Ident("y".into()),
         Ident("nx".into()),
         Ident("ny".into()),
-        IndexExpr {
-            expr: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
-            index: Box::new(UnaryExpr {
-                kind: Minus,
-                expr: Box::new(Integer(1)),
-            }),
-        },
-        IndexExpr {
-            expr: Box::new(Array(vec![])),
-            index: Box::new(CallExpr {
-                name: Box::new(Ident("zero".into())),
-                args: vec![],
-            }),
-        },
-        IndexExpr {
-            expr: Box::new(Str("hello".into())),
-            index: Box::new(Integer(0)),
-        },
-        IndexExpr {
-            expr: Box::new(Ident("vec".into())),
-            index: Box::new(Integer(0)),
-        },
     ];
 
     loop_test(input, expect, |p| {

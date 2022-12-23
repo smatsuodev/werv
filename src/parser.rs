@@ -319,7 +319,7 @@ impl Parser {
         Ok(node)
     }
 
-    /// unary = "-" unary | "!" unary | primary
+    /// unary = "-" unary | "!" unary | index
     fn parse_unary(&mut self) -> PResult<Expression> {
         // "-" primary
         if self.consume(TokenKind::Minus).is_ok() {
@@ -337,10 +337,28 @@ impl Parser {
             });
         }
 
-        self.parse_primary()
+        self.parse_index()
     }
 
-    /// primary = integer | ident ( "[" expr "]" | "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str ( "[" expr "]")? | bool | array ( "[" expr "]")? | "(" expr ")"
+    /// index = primary ( "[" expr "]" )*
+    fn parse_index(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_primary()?;
+
+        while self.consume(TokenKind::LBracket).is_ok() {
+            let index = self.parse_expr()?;
+
+            self.consume(TokenKind::RBracket)?;
+
+            node = IndexExpr {
+                expr: Box::new(node),
+                index: Box::new(index),
+            }
+        }
+
+        Ok(node)
+    }
+
+    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | array | "(" expr ")"
     fn parse_primary(&mut self) -> PResult<Expression> {
         // "(" expr ")"
         if self.consume(TokenKind::LParen).is_ok() {
@@ -350,20 +368,9 @@ impl Parser {
             return Ok(expr);
         }
 
-        // ident ( "[" expr "]" | "=" expr | "(" ( expr ( "," expr )* )? ")" )?
+        // ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )?
         if self.is_cur(TokenKind::Ident) {
             let name = self.parse_ident()?;
-
-            if self.consume(TokenKind::LBracket).is_ok() {
-                let index = Box::new(self.parse_expr()?);
-
-                self.consume(TokenKind::RBracket)?;
-
-                return Ok(IndexExpr {
-                    expr: Box::new(name),
-                    index,
-                });
-            }
 
             if self.consume(TokenKind::Assign).is_ok() {
                 return Ok(AssignExpr {
@@ -408,20 +415,7 @@ impl Parser {
 
         // str
         if self.is_cur(TokenKind::Str) {
-            let str = self.parse_str()?;
-
-            if self.consume(TokenKind::LBracket).is_ok() {
-                let index = Box::new(self.parse_expr()?);
-
-                self.consume(TokenKind::RBracket)?;
-
-                return Ok(IndexExpr {
-                    expr: Box::new(str),
-                    index,
-                });
-            }
-
-            return Ok(str);
+            return self.parse_str();
         }
 
         // bool
@@ -431,20 +425,7 @@ impl Parser {
 
         // array
         if self.is_cur(TokenKind::LBracket) {
-            let array = self.parse_array()?;
-
-            if self.consume(TokenKind::LBracket).is_ok() {
-                let index = self.parse_expr()?;
-
-                self.consume(TokenKind::RBracket)?;
-
-                return Ok(IndexExpr {
-                    expr: Box::new(array),
-                    index: Box::new(index),
-                });
-            }
-
-            return Ok(array);
+            return self.parse_array();
         }
 
         return self.parse_integer();

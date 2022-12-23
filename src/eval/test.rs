@@ -264,6 +264,7 @@ fn eval_array_test() {
         vec[2]
         ",
         r#""hello"[-1]"#,
+        "[[1]][0][0]",
     ];
     let expect = [
         Array(vec![Integer(1), Integer(2), Integer(3)]),
@@ -277,6 +278,7 @@ fn eval_array_test() {
         Integer(3),
         Integer(3),
         Str(String::from("o")),
+        Integer(1),
     ];
 
     loop_test(input, expect);
