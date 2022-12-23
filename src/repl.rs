@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::{environment::Environment, eval::eval, lexer::Lexer, parser::Parser};
+use crate::{eval::Environment, lexer::Lexer, parser::Parser};
 
 const PROMPT: &'static str = ">> ";
 
@@ -24,7 +24,7 @@ pub fn start() {
                 continue;
             }
         };
-        let result = match eval(program, &mut env) {
+        let result = match env.eval(program) {
             Ok(o) => o,
             Err(e) => {
                 eprintln!("Eval error: {:?}", e);

@@ -6,265 +6,277 @@ use self::error::{EvalError, EvalError::*};
 use crate::{
     ast::{BinaryExprKind, Expression, Node, Statement, UnaryExprKind},
     builtin::call_builtin,
-    environment::Environment,
     object::{Object, Object::*, NULL},
 };
+use std::collections::BTreeMap;
 
 type EResult = Result<Object, EvalError>;
 
-pub fn eval(node: impl Into<Node>, env: &mut Environment) -> EResult {
-    let node: Node = node.into();
-
-    match node {
-        Node::Program(stmts) => eval_statements(stmts, env),
-        Node::Statement(s) => eval_statement(s, env),
-        Node::Expression(e) => eval_expression(e, env),
-    }
+#[derive(Clone, Debug)]
+pub struct Environment {
+    store: BTreeMap<String, Object>,
 }
+impl Environment {
+    pub fn new() -> Environment {
+        Environment {
+            store: BTreeMap::new(),
+        }
+    }
+    pub fn get(&self, key: &String) -> Option<&Object> {
+        self.store.get(key)
+    }
+    pub fn insert(&mut self, key: String, value: Object) -> Option<Object> {
+        self.store.insert(key, value)
+    }
 
-fn eval_statements(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
-    let mut result = NULL;
+    pub fn eval(&mut self, node: impl Into<Node>) -> EResult {
+        let node: Node = node.into();
 
-    for s in stmts {
-        result = eval(s, env)?;
-
-        // もしevalが値を返したなら、BlockReturnStatementかReturnStatementが評価されたということなので、
-        // 即座に値を返す
-        if result != NULL {
-            return Ok(result);
+        match node {
+            Node::Program(stmts) => self.eval_statements(stmts),
+            Node::Statement(s) => self.eval_statement(s),
+            Node::Expression(e) => self.eval_expression(e),
         }
     }
 
-    Ok(result)
-}
+    fn eval_statements(&mut self, stmts: Vec<Statement>) -> EResult {
+        let mut result = NULL;
 
-fn eval_statement(s: Statement, env: &mut Environment) -> EResult {
-    match s {
-        Statement::ExprStmt { is_null, expr } => eval_expr_stmt(is_null, expr, env),
-        Statement::LetStmt { name, value } => eval_let_stmt(name, value, env),
-        Statement::LetFnStmt { name, params, body } => eval_fn_def_stmt(name, params, body, env),
-        Statement::ReturnStmt(e) => eval(e, env),
-        Statement::WhileStmt { condition, body } => eval_while_stmt(condition, body, env),
-    }
-}
+        for s in stmts {
+            result = self.eval(s)?;
 
-fn eval_expr_stmt(is_null: bool, expr: Expression, env: &mut Environment) -> EResult {
-    if is_null {
-        eval(expr, env)?;
-
-        Ok(NULL)
-    } else {
-        eval(expr, env)
-    }
-}
-
-fn eval_while_stmt(condition: Expression, body: Expression, env: &mut Environment) -> EResult {
-    loop {
-        if let Boolean(true) = eval(condition.clone(), env)? {
-            eval(body.clone(), env)?;
-        } else {
-            break;
-        }
-    }
-
-    Ok(NULL)
-}
-
-fn eval_fn_def_stmt(
-    name: Expression,
-    params: Vec<Expression>,
-    body: Expression,
-    env: &mut Environment,
-) -> EResult {
-    if let Expression::Ident(name) = name {
-        env.insert(name, Function { params, body });
-    } else {
-        return Err(EvalFunctionDefinitionStatementError);
-    }
-
-    Ok(NULL)
-}
-
-fn eval_let_stmt(name: Expression, value: Expression, env: &mut Environment) -> EResult {
-    let value = eval(value, env)?;
-
-    if let Expression::Ident(name) = name {
-        env.insert(name, value);
-    } else {
-        return Err(EvalLetStatementError);
-    }
-
-    Ok(NULL)
-}
-
-fn eval_expression(e: Expression, env: &mut Environment) -> EResult {
-    match e {
-        Expression::IfExpr {
-            condition,
-            consequence,
-            alternative,
-        } => eval_if_expr(condition, consequence, alternative, env),
-        Expression::BlockExpr(stmts) => eval_block(stmts, env),
-        Expression::UnaryExpr { kind, expr } => eval_unary_expr(kind, expr, env),
-        Expression::BinaryExpr { kind, lhs, rhs } => eval_binary_expr(kind, lhs, rhs, env),
-        Expression::Integer(i) => eval_integer(i),
-        Expression::Boolean(b) => eval_boolean(b),
-        Expression::Ident(i) => eval_ident(i, env),
-        Expression::CallExpr { name, args } => eval_call_expr(name, args, env),
-        Expression::Str(s) => eval_string(s),
-        Expression::AssignExpr { name, value } => eval_assign_expr(name, value, env),
-    }
-}
-
-fn eval_call_expr<'a>(
-    name: Box<Expression>,
-    args: Vec<Expression>,
-    env: &mut Environment,
-) -> EResult {
-    if let Expression::Ident(name) = name.as_ref() {
-        if let Ok(res) = call_builtin(name, &args, env) {
-            return Ok(res);
-        }
-    }
-
-    let name = eval(*name, env)?;
-
-    if let Function { params, body } = name {
-        if params.len() != args.len() {
-            return Err(EvalCallExprError);
-        }
-
-        let mut env = env.clone();
-
-        // map params and args and insert to env
-        for i in 0..params.len() {
-            let param = &params[i];
-            let arg = args[i].clone();
-
-            if let Expression::Ident(param) = param {
-                let arg = eval(arg, &mut env)?;
-
-                env.insert(param.clone(), arg);
-            } else {
-                return Err(EvalCallExprError);
+            // もしevalが値を返したなら、BlockReturnStatementかReturnStatementが評価されたということなので、
+            // 即座に値を返す
+            if result != NULL {
+                return Ok(result);
             }
         }
 
-        return eval(body, &mut env);
+        Ok(result)
     }
 
-    Err(EvalCallExprError)
-}
-
-fn eval_block(stmts: Vec<Statement>, env: &mut Environment) -> EResult {
-    eval_statements(stmts, &mut env.clone())
-}
-
-fn eval_if_expr(
-    condition: Box<Expression>,
-    consequence: Box<Expression>,
-    alternative: Option<Box<Expression>>,
-    env: &mut Environment,
-) -> EResult {
-    let condition = eval(*condition, env)?;
-
-    if condition == Boolean(true) {
-        return eval(*consequence, env);
-    } else if let Some(alternative) = alternative {
-        return eval(*alternative, env);
+    fn eval_statement(&mut self, s: Statement) -> EResult {
+        match s {
+            Statement::ExprStmt { is_null, expr } => self.eval_expr_stmt(is_null, expr),
+            Statement::LetStmt { name, value } => self.eval_let_stmt(name, value),
+            Statement::LetFnStmt { name, params, body } => {
+                self.eval_fn_def_stmt(name, params, body)
+            }
+            Statement::ReturnStmt(e) => self.eval(e),
+            Statement::WhileStmt { condition, body } => self.eval_while_stmt(condition, body),
+        }
     }
 
-    Ok(NULL)
-}
+    fn eval_expr_stmt(&mut self, is_null: bool, expr: Expression) -> EResult {
+        if is_null {
+            self.eval(expr)?;
 
-fn eval_unary_expr(kind: UnaryExprKind, expr: Box<Expression>, env: &mut Environment) -> EResult {
-    let expr = eval(*expr, env)?;
-
-    if let (UnaryExprKind::Not, Object::Boolean(b)) = (kind, &expr) {
-        return eval_boolean(!b);
-    }
-    if let (UnaryExprKind::Minus, Object::Integer(i)) = (kind, &expr) {
-        return eval_integer(-i);
+            Ok(NULL)
+        } else {
+            self.eval(expr)
+        }
     }
 
-    Err(EvalUnaryExpressionError)
-}
+    fn eval_while_stmt(&mut self, condition: Expression, body: Expression) -> EResult {
+        loop {
+            if let Boolean(true) = self.eval(condition.clone())? {
+                self.eval(body.clone())?;
+            } else {
+                break;
+            }
+        }
 
-fn eval_binary_expr(
-    kind: BinaryExprKind,
-    lhs: Box<Expression>,
-    rhs: Box<Expression>,
-    env: &mut Environment,
-) -> EResult {
-    let lhs = eval(*lhs, env)?;
-    let rhs = eval(*rhs, env)?;
+        Ok(NULL)
+    }
 
-    if kind == BinaryExprKind::Eq {
-        return Ok(Boolean(lhs == rhs));
-    };
-    if kind == BinaryExprKind::Ne {
-        return Ok(Boolean(lhs != rhs));
-    };
+    fn eval_fn_def_stmt(
+        &mut self,
+        name: Expression,
+        params: Vec<Expression>,
+        body: Expression,
+    ) -> EResult {
+        if let Expression::Ident(name) = name {
+            self.insert(name, Function { params, body });
+        } else {
+            return Err(EvalFunctionDefinitionStatementError);
+        }
 
-    if let (Integer(lhs), Integer(rhs)) = (&lhs, &rhs) {
-        let result = match kind {
-            BinaryExprKind::Add => Integer(lhs + rhs),
-            BinaryExprKind::Sub => Integer(lhs - rhs),
-            BinaryExprKind::Mul => Integer(lhs * rhs),
-            BinaryExprKind::Div => Integer(lhs / rhs),
-            BinaryExprKind::Mod => Integer(lhs % rhs),
-            BinaryExprKind::Lt => Boolean(lhs < rhs),
-            BinaryExprKind::Le => Boolean(lhs <= rhs),
-            BinaryExprKind::Gt => Boolean(lhs > rhs),
-            BinaryExprKind::Ge => Boolean(lhs >= rhs),
-            _ => return Err(EvalBinaryExpressionError),
+        Ok(NULL)
+    }
+
+    fn eval_let_stmt(&mut self, name: Expression, value: Expression) -> EResult {
+        let value = self.eval(value)?;
+
+        if let Expression::Ident(name) = name {
+            self.insert(name, value);
+        } else {
+            return Err(EvalLetStatementError);
+        }
+
+        Ok(NULL)
+    }
+
+    fn eval_expression(&mut self, e: Expression) -> EResult {
+        match e {
+            Expression::IfExpr {
+                condition,
+                consequence,
+                alternative,
+            } => self.eval_if_expr(condition, consequence, alternative),
+            Expression::BlockExpr(stmts) => self.eval_block(stmts),
+            Expression::UnaryExpr { kind, expr } => self.eval_unary_expr(kind, expr),
+            Expression::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, lhs, rhs),
+            Expression::Integer(i) => self.eval_integer(i),
+            Expression::Boolean(b) => self.eval_boolean(b),
+            Expression::Ident(i) => self.eval_ident(i),
+            Expression::CallExpr { name, args } => self.eval_call_expr(name, args),
+            Expression::Str(s) => self.eval_string(s),
+            Expression::AssignExpr { name, value } => self.eval_assign_expr(name, value),
+        }
+    }
+
+    fn eval_call_expr<'a>(&mut self, name: Box<Expression>, args: Vec<Expression>) -> EResult {
+        if let Expression::Ident(name) = name.as_ref() {
+            if let Ok(res) = call_builtin(name, &args, self) {
+                return Ok(res);
+            }
+        }
+
+        let name = self.eval(*name)?;
+
+        if let Function { params, body } = name {
+            if params.len() != args.len() {
+                return Err(EvalCallExprError);
+            }
+
+            let mut env = self.clone();
+
+            // map params and args and insert to env
+            for i in 0..params.len() {
+                let param = &params[i];
+                let arg = args[i].clone();
+
+                if let Expression::Ident(param) = param {
+                    let arg = env.eval(arg)?;
+
+                    env.insert(param.clone(), arg);
+                } else {
+                    return Err(EvalCallExprError);
+                }
+            }
+
+            return env.eval(body);
+        }
+
+        Err(EvalCallExprError)
+    }
+
+    fn eval_block(&mut self, stmts: Vec<Statement>) -> EResult {
+        self.clone().eval_statements(stmts)
+    }
+
+    fn eval_if_expr(
+        &mut self,
+        condition: Box<Expression>,
+        consequence: Box<Expression>,
+        alternative: Option<Box<Expression>>,
+    ) -> EResult {
+        let condition = self.eval(*condition)?;
+
+        if condition == Boolean(true) {
+            return self.eval(*consequence);
+        } else if let Some(alternative) = alternative {
+            return self.eval(*alternative);
+        }
+
+        Ok(NULL)
+    }
+
+    fn eval_unary_expr(&mut self, kind: UnaryExprKind, expr: Box<Expression>) -> EResult {
+        let expr = self.eval(*expr)?;
+
+        if let (UnaryExprKind::Not, Object::Boolean(b)) = (kind, &expr) {
+            return self.eval_boolean(!b);
+        }
+        if let (UnaryExprKind::Minus, Object::Integer(i)) = (kind, &expr) {
+            return self.eval_integer(-i);
+        }
+
+        Err(EvalUnaryExpressionError)
+    }
+
+    fn eval_binary_expr(
+        &mut self,
+        kind: BinaryExprKind,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
+    ) -> EResult {
+        let lhs = self.eval(*lhs)?;
+        let rhs = self.eval(*rhs)?;
+
+        if kind == BinaryExprKind::Eq {
+            return Ok(Boolean(lhs == rhs));
+        };
+        if kind == BinaryExprKind::Ne {
+            return Ok(Boolean(lhs != rhs));
         };
 
-        return Ok(result);
-    } else if let (Str(lhs), Str(rhs)) = (lhs, rhs) {
-        let result = match kind {
-            BinaryExprKind::Add => Str(lhs + &rhs),
-            BinaryExprKind::Lt => Boolean(lhs < rhs),
-            BinaryExprKind::Le => Boolean(lhs <= rhs),
-            BinaryExprKind::Gt => Boolean(lhs > rhs),
-            BinaryExprKind::Ge => Boolean(lhs >= rhs),
-            _ => return Err(EvalBinaryExpressionError),
-        };
+        if let (Integer(lhs), Integer(rhs)) = (&lhs, &rhs) {
+            let result = match kind {
+                BinaryExprKind::Add => Integer(lhs + rhs),
+                BinaryExprKind::Sub => Integer(lhs - rhs),
+                BinaryExprKind::Mul => Integer(lhs * rhs),
+                BinaryExprKind::Div => Integer(lhs / rhs),
+                BinaryExprKind::Mod => Integer(lhs % rhs),
+                BinaryExprKind::Lt => Boolean(lhs < rhs),
+                BinaryExprKind::Le => Boolean(lhs <= rhs),
+                BinaryExprKind::Gt => Boolean(lhs > rhs),
+                BinaryExprKind::Ge => Boolean(lhs >= rhs),
+                _ => return Err(EvalBinaryExpressionError),
+            };
 
-        return Ok(result);
+            return Ok(result);
+        } else if let (Str(lhs), Str(rhs)) = (lhs, rhs) {
+            let result = match kind {
+                BinaryExprKind::Add => Str(lhs + &rhs),
+                BinaryExprKind::Lt => Boolean(lhs < rhs),
+                BinaryExprKind::Le => Boolean(lhs <= rhs),
+                BinaryExprKind::Gt => Boolean(lhs > rhs),
+                BinaryExprKind::Ge => Boolean(lhs >= rhs),
+                _ => return Err(EvalBinaryExpressionError),
+            };
+
+            return Ok(result);
+        }
+
+        Err(EvalBinaryExpressionError)
     }
 
-    Err(EvalBinaryExpressionError)
-}
-
-fn eval_integer(i: isize) -> EResult {
-    Ok(Integer(i))
-}
-
-fn eval_boolean(b: bool) -> EResult {
-    Ok(Boolean(b))
-}
-
-fn eval_string(s: String) -> EResult {
-    Ok(Str(s))
-}
-
-fn eval_ident(i: String, env: &mut Environment) -> EResult {
-    Ok(env.get(&i).ok_or(EvalIdentError)?.clone())
-}
-
-fn eval_assign_expr(
-    name: Box<Expression>,
-    value: Box<Expression>,
-    env: &mut Environment,
-) -> EResult {
-    if let Expression::Ident(name) = *name {
-        let value = eval(*value, env)?;
-
-        env.insert(name, value);
-
-        return Ok(NULL);
+    fn eval_integer(&self, i: isize) -> EResult {
+        Ok(Integer(i))
     }
 
-    Err(EvalAssignExprError)
+    fn eval_boolean(&self, b: bool) -> EResult {
+        Ok(Boolean(b))
+    }
+
+    fn eval_string(&self, s: String) -> EResult {
+        Ok(Str(s))
+    }
+
+    fn eval_ident(&mut self, i: String) -> EResult {
+        Ok(self.get(&i).ok_or(EvalIdentError)?.clone())
+    }
+
+    fn eval_assign_expr(&mut self, name: Box<Expression>, value: Box<Expression>) -> EResult {
+        if let Expression::Ident(name) = *name {
+            let value = self.eval(*value)?;
+
+            self.insert(name, value);
+
+            return Ok(NULL);
+        }
+
+        Err(EvalAssignExprError)
+    }
 }

@@ -1,7 +1,6 @@
 use crate::{
     ast::Expression,
-    environment::Environment,
-    eval::eval,
+    eval::Environment,
     object::{Object, NULL},
 };
 
@@ -16,7 +15,7 @@ pub fn call_builtin(
                 return Err(());
             }
 
-            println!("{}", eval(args[0].clone(), env).or(Err(()))?);
+            println!("{}", env.eval(args[0].clone()).or(Err(()))?);
             Ok(NULL)
         }
         "print" => {
@@ -24,7 +23,7 @@ pub fn call_builtin(
                 return Err(());
             }
 
-            print!("{}", eval(args[0].clone(), env).or(Err(()))?);
+            print!("{}", env.eval(args[0].clone()).or(Err(()))?);
             Ok(NULL)
         }
         _ => Err(()),

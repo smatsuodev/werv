@@ -1,6 +1,5 @@
 use crate::{
-    environment::Environment,
-    eval::eval,
+    eval::Environment,
     lexer::Lexer,
     object::{
         Object::{self, *},
@@ -20,7 +19,7 @@ where
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
         let mut env = Environment::new();
-        let object = eval(program, &mut env).unwrap();
+        let object = env.eval(program).unwrap();
 
         assert_eq!(object, expect[i].clone(), "{:?}", input[i]);
     }
@@ -35,7 +34,7 @@ where
         let mut p = Parser::new(l);
         let program = p.parse().unwrap();
         let mut env = Environment::new();
-        let object = eval(program, &mut env);
+        let object = env.eval(program);
 
         assert_eq!(object, expect[i]);
     }
