@@ -158,7 +158,7 @@ impl Environment {
             Expression::Str(s) => self.eval_string(s),
             Expression::AssignExpr { name, value } => self.eval_assign_expr(name, value),
             Expression::Array(elems) => self.eval_array(elems),
-            Expression::ArrayIndexExpr { array, index } => self.eval_array_index_expr(array, index),
+            Expression::IndexExpr { expr: array, index } => self.eval_index_expr(array, index),
         }
     }
 
@@ -321,11 +321,11 @@ impl Environment {
         Ok(Array(elements))
     }
 
-    fn eval_array_index_expr(&mut self, array: Box<Expression>, index: Box<Expression>) -> EResult {
-        let array = self.eval(*array)?;
+    fn eval_index_expr(&mut self, expr: Box<Expression>, index: Box<Expression>) -> EResult {
+        let expr = self.eval(*expr)?;
         let index = self.eval(*index)?;
 
-        if let Array(elems) = array {
+        if let Array(elems) = expr {
             if let Integer(index) = index {
                 if let Ok(index) = index.try_into() {
                     if elems.len() <= index {
@@ -345,7 +345,31 @@ impl Environment {
 
                 return Ok(elems[fixed_index].clone());
             }
-        };
+        } else if let Str(str) = expr {
+            if let Integer(index) = index {
+                if let Ok(index) = index.try_into() {
+                    return str
+                        .chars()
+                        .nth(index)
+                        .ok_or(EvalArrayIndexExprError)
+                        .map(|o| Str(o.to_string()));
+                }
+
+                let index_from_end: usize = (index.abs() - 1).try_into().unwrap();
+
+                if str.len() <= index_from_end {
+                    return Err(EvalArrayIndexExprError);
+                }
+
+                let fixed_index = str.len() - index_from_end - 1;
+
+                return str
+                    .chars()
+                    .nth(fixed_index)
+                    .ok_or(EvalArrayIndexExprError)
+                    .map(|o| Str(o.to_string()));
+            }
+        }
 
         Err(EvalArrayIndexExprError)
     }

@@ -892,6 +892,8 @@ fn parse_primary_test() {
         "ny",
         "[1,2,3][-1]",
         "[][zero()]",
+        r#""hello"[0]"#,
+        "vec[0]",
     ];
     let expect = [
         Integer(1234567890),
@@ -956,19 +958,27 @@ fn parse_primary_test() {
         Ident("y".into()),
         Ident("nx".into()),
         Ident("ny".into()),
-        ArrayIndexExpr {
-            array: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
+        IndexExpr {
+            expr: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
             index: Box::new(UnaryExpr {
                 kind: Minus,
                 expr: Box::new(Integer(1)),
             }),
         },
-        ArrayIndexExpr {
-            array: Box::new(Array(vec![])),
+        IndexExpr {
+            expr: Box::new(Array(vec![])),
             index: Box::new(CallExpr {
                 name: Box::new(Ident("zero".into())),
                 args: vec![],
             }),
+        },
+        IndexExpr {
+            expr: Box::new(Str("hello".into())),
+            index: Box::new(Integer(0)),
+        },
+        IndexExpr {
+            expr: Box::new(Ident("vec".into())),
+            index: Box::new(Integer(0)),
         },
     ];
 
