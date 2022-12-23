@@ -238,7 +238,13 @@ fn eval_while_test() {
 
 #[test]
 fn eval_array_test() {
-    let input = ["[1,2,3]", r#"["[","]","a"]"#, "[true, false]"];
+    let input = [
+        "[1,2,3]",
+        r#"["[","]","a"]"#,
+        "[true, false]",
+        r#"["[","]","a"][0]"#,
+        "[1,2,3][-1]",
+    ];
     let expect = [
         Array(vec![Integer(1), Integer(2), Integer(3)]),
         Array(vec![
@@ -247,6 +253,8 @@ fn eval_array_test() {
             Str(String::from("a")),
         ]),
         Array(vec![Boolean(true), Boolean(false)]),
+        Str(String::from("[")),
+        Integer(3),
     ];
 
     loop_test(input, expect);

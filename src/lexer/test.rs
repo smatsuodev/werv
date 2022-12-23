@@ -30,7 +30,7 @@ if 1==1 {
 1>=10;
 "input123";
 while true {}
-[1,2,3];
+[1,2,3][0];
 "#;
     let expect = [
         (Let, "let"),
@@ -144,6 +144,9 @@ while true {}
         (Number, "2"),
         (Comma, ","),
         (Number, "3"),
+        (RBracket, "]"),
+        (LBracket, "["),
+        (Number, "0"),
         (RBracket, "]"),
         (SemiColon, ";"),
         (EOF, "\0"),

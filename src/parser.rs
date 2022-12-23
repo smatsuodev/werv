@@ -340,7 +340,7 @@ impl Parser {
         self.parse_primary()
     }
 
-    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | array | "(" expr ")"
+    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | array ( "[" expr "]")? | "(" expr ")"
     fn parse_primary(&mut self) -> PResult<Expression> {
         // "(" expr ")"
         if self.consume(TokenKind::LParen).is_ok() {
@@ -407,7 +407,20 @@ impl Parser {
 
         // array
         if self.is_cur(TokenKind::LBracket) {
-            return self.parse_array();
+            let array = self.parse_array()?;
+
+            if self.consume(TokenKind::LBracket).is_ok() {
+                let index = self.parse_expr()?;
+
+                self.consume(TokenKind::RBracket)?;
+
+                return Ok(ArrayIndexExpr {
+                    array: Box::new(array),
+                    index: Box::new(index),
+                });
+            }
+
+            return Ok(array);
         }
 
         return self.parse_integer();

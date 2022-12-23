@@ -890,6 +890,8 @@ fn parse_primary_test() {
         "y",
         "nx",
         "ny",
+        "[1,2,3][-1]",
+        "[][zero()]",
     ];
     let expect = [
         Integer(1234567890),
@@ -954,6 +956,20 @@ fn parse_primary_test() {
         Ident("y".into()),
         Ident("nx".into()),
         Ident("ny".into()),
+        ArrayIndexExpr {
+            array: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
+            index: Box::new(UnaryExpr {
+                kind: Minus,
+                expr: Box::new(Integer(1)),
+            }),
+        },
+        ArrayIndexExpr {
+            array: Box::new(Array(vec![])),
+            index: Box::new(CallExpr {
+                name: Box::new(Ident("zero".into())),
+                args: vec![],
+            }),
+        },
     ];
 
     loop_test(input, expect, |p| {
@@ -1010,7 +1026,12 @@ fn parse_ident_test() {
 
 #[test]
 fn parse_array_test() {
-    let input = ["[1,2,3]", r#"["[","]","a"]"#, "[true, false]"];
+    let input = [
+        "[1,2,3]",
+        r#"["[","]","a"]"#,
+        "[true, false]",
+        "[one(),two()]",
+    ];
     let expect = [
         Array(vec![Integer(1), Integer(2), Integer(3)]),
         Array(vec![
@@ -1019,6 +1040,16 @@ fn parse_array_test() {
             Str("a".to_string()),
         ]),
         Array(vec![Boolean(true), Boolean(false)]),
+        Array(vec![
+            CallExpr {
+                name: Box::new(Ident("one".into())),
+                args: vec![],
+            },
+            CallExpr {
+                name: Box::new(Ident("two".into())),
+                args: vec![],
+            },
+        ]),
     ];
 
     loop_test(input, expect, |p| p.parse_array().unwrap());

@@ -158,6 +158,7 @@ impl Environment {
             Expression::Str(s) => self.eval_string(s),
             Expression::AssignExpr { name, value } => self.eval_assign_expr(name, value),
             Expression::Array(elems) => self.eval_array(elems),
+            Expression::ArrayIndexExpr { array, index } => self.eval_array_index_expr(array, index),
         }
     }
 
@@ -318,5 +319,34 @@ impl Environment {
         }
 
         Ok(Array(elements))
+    }
+
+    fn eval_array_index_expr(&mut self, array: Box<Expression>, index: Box<Expression>) -> EResult {
+        let array = self.eval(*array)?;
+        let index = self.eval(*index)?;
+
+        if let Array(elems) = array {
+            if let Integer(index) = index {
+                if let Ok(index) = index.try_into() {
+                    if elems.len() <= index {
+                        return Err(EvalArrayIndexExprError);
+                    }
+
+                    return Ok(elems[index].clone());
+                }
+
+                let index_from_end: usize = (index.abs() - 1).try_into().unwrap();
+
+                if elems.len() <= index_from_end {
+                    return Err(EvalArrayIndexExprError);
+                }
+
+                let fixed_index = elems.len() - index_from_end - 1;
+
+                return Ok(elems[fixed_index].clone());
+            }
+        };
+
+        Err(EvalArrayIndexExprError)
     }
 }

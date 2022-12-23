@@ -8,6 +8,7 @@ pub enum EvalError {
     EvalCallExprError,
     EvalAssignExprError,
     EvalUpdateEnvError,
+    EvalArrayIndexExprError,
 }
 
 use EvalError::*;
@@ -22,6 +23,7 @@ impl ToString for EvalError {
             EvalCallExprError => "EvalCallExprError",
             EvalAssignExprError => "EvalAssignExprError",
             EvalUpdateEnvError => "EvalUpdateEnvError",
+            EvalArrayIndexExprError => "EvalArrayIndexExprError",
         };
 
         format!("Eval Error: {}", body)

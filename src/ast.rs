@@ -34,6 +34,10 @@ impl Into<Node> for Statement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    ArrayIndexExpr {
+        array: Box<Expression>,
+        index: Box<Expression>,
+    },
     AssignExpr {
         name: Box<Expression>,
         value: Box<Expression>,
