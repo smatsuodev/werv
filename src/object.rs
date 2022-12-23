@@ -11,6 +11,7 @@ pub enum Object {
     Integer(isize),
     Boolean(bool),
     Str(String),
+    Array(Vec<Object>),
     Function {
         /// Vector of ident
         params: Vec<Expression>,
@@ -30,6 +31,13 @@ impl std::fmt::Display for Object {
                 Object::Integer(i) => i.to_string(),
                 Object::Boolean(b) => b.to_string(),
                 Object::Str(s) => s.to_string(),
+                Object::Array(e) => format!(
+                    "[{}]",
+                    e.iter()
+                        .map(|o| o.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                ),
                 Object::Function { .. } => String::from("[Function]"),
             }
         )

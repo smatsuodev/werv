@@ -85,6 +85,8 @@ impl Lexer {
             ')' => TokenKind::RParen,
             '{' => TokenKind::LBrace,
             '}' => TokenKind::RBrace,
+            '[' => TokenKind::LBracket,
+            ']' => TokenKind::RBracket,
             '\0' => TokenKind::EOF,
             _ if self.is_number() => {
                 return Ok(Token::new(TokenKind::Number, self.read_number()));

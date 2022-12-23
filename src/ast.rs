@@ -61,6 +61,7 @@ pub enum Expression {
     Integer(isize),
     Boolean(bool),
     Str(String),
+    Array(Vec<Expression>),
 }
 impl Into<Node> for Expression {
     fn into(self) -> Node {

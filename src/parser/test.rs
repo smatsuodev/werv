@@ -1007,3 +1007,19 @@ fn parse_ident_test() {
 
     loop_test(input, expect, |p| p.parse_ident().unwrap());
 }
+
+#[test]
+fn parse_array_test() {
+    let input = ["[1,2,3]", r#"["[","]","a"]"#, "[true, false]"];
+    let expect = [
+        Array(vec![Integer(1), Integer(2), Integer(3)]),
+        Array(vec![
+            Str("[".to_string()),
+            Str("]".to_string()),
+            Str("a".to_string()),
+        ]),
+        Array(vec![Boolean(true), Boolean(false)]),
+    ];
+
+    loop_test(input, expect, |p| p.parse_array().unwrap());
+}

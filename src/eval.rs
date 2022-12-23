@@ -157,6 +157,7 @@ impl Environment {
             Expression::CallExpr { name, args } => self.eval_call_expr(name, args),
             Expression::Str(s) => self.eval_string(s),
             Expression::AssignExpr { name, value } => self.eval_assign_expr(name, value),
+            Expression::Array(elems) => self.eval_array(elems),
         }
     }
 
@@ -307,5 +308,15 @@ impl Environment {
         }
 
         Err(EvalAssignExprError)
+    }
+
+    fn eval_array(&mut self, elems: Vec<Expression>) -> EResult {
+        let mut elements = Vec::new();
+
+        for e in elems {
+            elements.push(self.eval(e)?);
+        }
+
+        Ok(Array(elements))
     }
 }

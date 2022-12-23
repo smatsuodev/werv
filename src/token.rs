@@ -26,6 +26,10 @@ pub enum TokenKind {
     LBrace,
     /// }
     RBrace,
+    /// [
+    LBracket,
+    /// ]
+    RBracket,
 
     /// ==
     Eq,

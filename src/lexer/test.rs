@@ -30,6 +30,7 @@ if 1==1 {
 1>=10;
 "input123";
 while true {}
+[1,2,3];
 "#;
     let expect = [
         (Let, "let"),
@@ -137,6 +138,14 @@ while true {}
         (True, "true"),
         (LBrace, "{"),
         (RBrace, "}"),
+        (LBracket, "["),
+        (Number, "1"),
+        (Comma, ","),
+        (Number, "2"),
+        (Comma, ","),
+        (Number, "3"),
+        (RBracket, "]"),
+        (SemiColon, ";"),
         (EOF, "\0"),
     ];
     let mut l = Lexer::new(input.to_string());

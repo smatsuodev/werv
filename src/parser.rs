@@ -340,7 +340,7 @@ impl Parser {
         self.parse_primary()
     }
 
-    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | "(" expr ")"
+    /// primary = integer | ident ( "=" expr | "(" ( expr ( "," expr )* )? ")" )? | str | bool | array | "(" expr ")"
     fn parse_primary(&mut self) -> PResult<Expression> {
         // "(" expr ")"
         if self.consume(TokenKind::LParen).is_ok() {
@@ -405,6 +405,11 @@ impl Parser {
             return self.parse_bool();
         }
 
+        // array
+        if self.is_cur(TokenKind::LBracket) {
+            return self.parse_array();
+        }
+
         return self.parse_integer();
     }
 
@@ -442,5 +447,30 @@ impl Parser {
 
         self.consume(TokenKind::False)?;
         Ok(Boolean(false))
+    }
+
+    /// array = "[" ( expr ( "," expr )* )? "]"
+    fn parse_array(&mut self) -> PResult<Expression> {
+        self.consume(TokenKind::LBracket)?;
+
+        let mut result = Vec::new();
+
+        // "[" "]"
+        if self.consume(TokenKind::RBracket).is_ok() {
+            return Ok(Array(result));
+        }
+
+        result.push(self.parse_expr()?);
+
+        while !self.consume(TokenKind::RBracket).is_ok() {
+            if self.is_eof() {
+                return Err(ParseArrayExprError);
+            }
+
+            self.consume(TokenKind::Comma)?;
+            result.push(self.parse_expr()?);
+        }
+
+        Ok(Array(result))
     }
 }

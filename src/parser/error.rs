@@ -8,6 +8,7 @@ pub enum ParseError {
     ParseNextTokenError(LexerError),
     ParseEscapeError,
     ParseCallExprError,
+    ParseArrayExprError,
 }
 
 use ParseError::*;
@@ -25,6 +26,7 @@ impl ToString for ParseError {
             ParseNextTokenError(e) => e.to_string(),
             ParseEscapeError => String::from("ParseEscapeError"),
             ParseCallExprError => String::from("ParseCallExprError"),
+            ParseArrayExprError => String::from("ParseArrayExprError"),
         };
 
         format!("Parser Error: {body}")
