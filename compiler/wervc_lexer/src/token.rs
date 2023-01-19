@@ -1,6 +1,9 @@
-pub enum TokenKind {}
-
-pub struct Token {
-    kind: TokenKind,
-    literal: String,
+pub enum TokenKind {
+    Unknown(char),
+    EOF,
+    Number(String),
+    Plus,
+    Minus,
+    Asterisk,
+    Slash,
 }
