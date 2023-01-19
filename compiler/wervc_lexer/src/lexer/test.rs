@@ -30,7 +30,7 @@ fn lexer_number_test() {
 
 #[test]
 fn lexer_arithmetic_test() {
-    let inputs = ["1+2-3*4/5"];
+    let inputs = ["1 + 2 - 3 * 4 / 5"];
     let expects = [[
         Number("1".to_string()),
         Plus,

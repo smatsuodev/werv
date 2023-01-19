@@ -36,6 +36,8 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> TokenKind {
+        self.eat_whitespace();
+
         let token = match self.ch {
             '+' => Plus,
             '-' => Minus,
@@ -54,8 +56,14 @@ impl Lexer {
         token
     }
 
-    pub fn is_digit(&mut self) -> bool {
-        self.ch.is_digit(10)
+    pub fn eat_whitespace(&mut self) {
+        while self.is_whitespace() {
+            self.read_char();
+        }
+    }
+
+    pub fn is_whitespace(&self) -> bool {
+        self.ch.is_whitespace()
     }
 
     pub fn read_number(&mut self) -> String {
@@ -66,5 +74,9 @@ impl Lexer {
         }
 
         self.input[position..self.position].to_string()
+    }
+
+    pub fn is_digit(&mut self) -> bool {
+        self.ch.is_digit(10)
     }
 }
