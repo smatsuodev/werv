@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Unknown(char),
     EOF,
