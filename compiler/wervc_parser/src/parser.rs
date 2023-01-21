@@ -1,4 +1,4 @@
-mod error;
+pub mod error;
 #[cfg(test)]
 mod test;
 
@@ -67,7 +67,11 @@ impl Parser {
 
     /// program = expr
     pub fn parse_program(&mut self) -> PResult<Node> {
-        Ok(Node::Expr(self.parse_expr()?))
+        let expr = self.parse_expr()?;
+
+        self.expect(EOF)?;
+
+        Ok(Node::Expr(expr))
     }
 
     /// expr = add
