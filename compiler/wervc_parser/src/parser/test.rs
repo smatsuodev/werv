@@ -1,5 +1,5 @@
 use super::Parser;
-use wervc_ast::{BinaryExprKind::*, Expr::*};
+use wervc_ast::{BinaryExprKind::*, Expr::*, Stmt::*};
 
 fn loop_assert<T, U, const N: usize>(inputs: [T; N], expects: [U; N], f: impl Fn(&mut Parser, U))
 where
@@ -15,15 +15,11 @@ where
 #[test]
 fn parse_integer_test() {
     let inputs = ["0", "42"];
+    let expects = [Integer(0), Integer(42)];
 
-    for input in inputs {
-        let mut parser = Parser::new(input);
-
-        assert_eq!(
-            parser.parse_integer().unwrap(),
-            Integer(input.parse::<isize>().unwrap())
-        )
-    }
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_integer().unwrap())
+    });
 }
 
 #[test]
@@ -49,5 +45,26 @@ fn parse_binary_expr_test() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_expr().unwrap())
+    });
+}
+
+#[test]
+fn parse_stmt_test() {
+    let inputs = ["1 + 2;", "1 + 2"];
+    let expects = [
+        ExprStmt(BinaryExpr {
+            kind: Add,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        }),
+        ExprReturnStmt(BinaryExpr {
+            kind: Add,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        }),
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_stmt().unwrap())
     });
 }

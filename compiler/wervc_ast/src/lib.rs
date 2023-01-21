@@ -1,6 +1,14 @@
 #[derive(Debug, PartialEq)]
 pub enum Node {
+    Program(Vec<Stmt>),
+    Stmt(Stmt),
     Expr(Expr),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Stmt {
+    ExprStmt(Expr),
+    ExprReturnStmt(Expr),
 }
 
 #[derive(Debug, PartialEq)]

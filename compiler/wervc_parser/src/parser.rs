@@ -6,6 +6,7 @@ use wervc_ast::{
     BinaryExprKind::*,
     Expr::{self, *},
     Node,
+    Stmt::{self, *},
 };
 use wervc_lexer::{
     lexer::Lexer,
@@ -65,13 +66,28 @@ impl Parser {
         Ok(token)
     }
 
-    /// program = expr
+    /// program = stmt*
     pub fn parse_program(&mut self) -> PResult<Node> {
+        let mut stmts = Vec::new();
+
+        while !self.consume(EOF) {
+            let stmt = self.parse_stmt()?;
+
+            stmts.push(stmt);
+        }
+
+        Ok(Node::Program(stmts))
+    }
+
+    /// stmt = expr ';'?
+    pub fn parse_stmt(&mut self) -> PResult<Stmt> {
         let expr = self.parse_expr()?;
 
-        self.expect(EOF)?;
+        if self.consume(SemiColon) {
+            return Ok(ExprStmt(expr));
+        }
 
-        Ok(Node::Expr(expr))
+        Ok(ExprReturnStmt(expr))
     }
 
     /// expr = add

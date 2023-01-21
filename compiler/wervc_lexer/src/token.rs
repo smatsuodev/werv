@@ -32,6 +32,7 @@ pub enum TokenKind {
 
     LParen,
     RParen,
+    SemiColon,
 }
 
 impl Default for TokenKind {
