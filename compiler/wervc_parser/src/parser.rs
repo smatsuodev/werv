@@ -3,7 +3,7 @@ pub mod error;
 mod test;
 
 use wervc_ast::{
-    BinaryExprKind::{self, *},
+    BinaryExprKind::*,
     Expr::{self, *},
     Node,
     Stmt::{self, *},
