@@ -15,6 +15,10 @@ impl Environment {
         }
     }
 
+    pub fn set_outer(&mut self, outer: Environment) {
+        self.outer = Some(Box::new(outer));
+    }
+
     pub fn outer(self) -> Option<Environment> {
         self.outer.map(|env| *env)
     }

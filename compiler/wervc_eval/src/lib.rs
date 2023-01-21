@@ -26,9 +26,7 @@ impl Evaluator {
     }
 
     pub fn set_outer(&mut self, outer: Environment) {
-        let env = Environment::new(Some(Box::new(outer)));
-
-        self.env = env;
+        self.env.set_outer(outer);
     }
 
     pub fn eval(&mut self, node: Node) -> EResult {
