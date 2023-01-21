@@ -3,7 +3,7 @@ pub mod error;
 mod test;
 
 use error::EvalError;
-use wervc_ast::{BinaryExprKind, Expr, Node};
+use wervc_ast::{BinaryExprKind, Expr, Node, Stmt};
 use wervc_object::Object::{self, *};
 
 type EResult = Result<Object, EvalError>;
@@ -17,7 +17,35 @@ impl Evaluator {
 
     pub fn eval(&mut self, node: Node) -> EResult {
         match node {
+            Node::Program(stmts) => self.eval_stmts(stmts),
+            Node::Stmt(stmt) => self.eval_stmt(stmt),
             Node::Expr(e) => self.eval_expr(e),
+        }
+    }
+
+    fn eval_stmts(&mut self, stmts: Vec<Stmt>) -> EResult {
+        let mut result = Unit;
+
+        for stmt in stmts {
+            let value = self.eval_stmt(stmt)?;
+
+            if result != Unit {
+                return Err(EvalError::UnexpectedReturnedValue(result));
+            }
+
+            result = value;
+        }
+
+        Ok(result)
+    }
+
+    fn eval_stmt(&mut self, stmt: Stmt) -> EResult {
+        match stmt {
+            Stmt::ExprStmt(e) => {
+                self.eval_expr(e)?;
+                Ok(Unit)
+            }
+            Stmt::ExprReturnStmt(e) => self.eval_expr(e),
         }
     }
 

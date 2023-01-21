@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Object {
     Integer(isize),
+    Unit,
 }
 
 impl std::fmt::Display for Object {
@@ -10,6 +11,7 @@ impl std::fmt::Display for Object {
             "{}",
             match self {
                 Self::Integer(i) => i.to_string(),
+                Self::Unit => "()".to_string(),
             }
         )
     }
