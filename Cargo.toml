@@ -7,3 +7,13 @@ edition = "2021"
 
 [dependencies]
 wervc = { path = "compiler/wervc" }
+
+[workspace]
+members = [
+    "compiler/wervc",
+    "compiler/wervc_ast",
+    "compiler/wervc_eval",
+    "compiler/wervc_lexer",
+    "compiler/wervc_object",
+    "compiler/wervc_parser",
+]

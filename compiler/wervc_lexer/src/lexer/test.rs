@@ -1,18 +1,17 @@
 use crate::{
     lexer::Lexer,
-    token::TokenKind::{self, *},
+    token::{Token, TokenKind::*},
 };
 
-fn loop_assert<const N: usize, const M: usize>(
+fn loop_assert<T, const N: usize, const M: usize>(
     inputs: [impl ToString; N],
-    expects: [[TokenKind; M]; N],
+    expects: [[T; M]; N],
+    f: impl Fn(&mut Lexer, [T; M]),
 ) {
     for (input, expects) in inputs.into_iter().zip(expects) {
         let mut lexer = Lexer::new(input);
 
-        for expect in expects {
-            assert_eq!(expect, lexer.next_token())
-        }
+        f(&mut lexer, expects);
     }
 }
 
@@ -23,8 +22,8 @@ fn lexer_number_test() {
     for input in inputs {
         let mut lexer = Lexer::new(input);
 
-        assert_eq!(Number(input.to_string()), lexer.next_token());
-        assert_eq!(EOF, lexer.next_token());
+        assert_eq!(Token::new(Number, input), lexer.next_token());
+        assert_eq!(Token::new(EOF, '\0'), lexer.next_token());
     }
 }
 
@@ -32,17 +31,21 @@ fn lexer_number_test() {
 fn lexer_arithmetic_test() {
     let inputs = ["1 + 2 - 3 * 4 / 5"];
     let expects = [[
-        Number("1".to_string()),
-        Plus,
-        Number("2".to_string()),
-        Minus,
-        Number("3".to_string()),
-        Asterisk,
-        Number("4".to_string()),
-        Slash,
-        Number("5".to_string()),
-        EOF,
+        (Number, "1"),
+        (Plus, "+"),
+        (Number, "2"),
+        (Minus, "-"),
+        (Number, "3"),
+        (Asterisk, "*"),
+        (Number, "4"),
+        (Slash, "/"),
+        (Number, "5"),
+        (EOF, "\0"),
     ]];
 
-    loop_assert(inputs, expects);
+    loop_assert(inputs, expects, |lexer, expects| {
+        for (kind, literal) in expects {
+            assert_eq!(Token::new(kind, literal), lexer.next_token());
+        }
+    });
 }

@@ -1,5 +1,5 @@
 [package]
-name = "wervc"
+name = "wervc_parser"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,4 @@ edition = "2021"
 
 [dependencies]
 wervc_lexer = { path = "../wervc_lexer" }
-wervc_parser = { path = "../wervc_parser" }
 wervc_ast = { path = "../wervc_ast" }
-wervc_object = { path = "../wervc_object" }
-wervc_eval = { path = "../wervc_eval" }

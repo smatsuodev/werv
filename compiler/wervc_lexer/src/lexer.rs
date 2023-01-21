@@ -1,4 +1,4 @@
-use crate::token::TokenKind::{self, *};
+use crate::token::{Token, TokenKind::*};
 
 #[cfg(test)]
 mod test;
@@ -24,7 +24,7 @@ impl Lexer {
         lexer
     }
 
-    pub fn read_char(&mut self) {
+    fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
             self.ch = '\0';
         } else {
@@ -35,38 +35,42 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    pub fn next_token(&mut self) -> TokenKind {
+    pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
 
-        let token = match self.ch {
+        let ch = self.ch;
+        let kind = match ch {
             '+' => Plus,
             '-' => Minus,
             '*' => Asterisk,
             '/' => Slash,
+            '(' => LParen,
+            ')' => RParen,
             '\0' => EOF,
             c if c.is_digit(10) => {
-                let num = self.read_number();
+                let literal = self.read_number();
 
-                return TokenKind::Number(num);
+                return Token::new(Number, literal);
             }
-            c => Unknown(c),
+            _ => Unknown,
         };
 
         self.read_char();
-        token
+
+        Token::new(kind, ch)
     }
 
-    pub fn eat_whitespace(&mut self) {
+    fn eat_whitespace(&mut self) {
         while self.is_whitespace() {
             self.read_char();
         }
     }
 
-    pub fn is_whitespace(&self) -> bool {
+    fn is_whitespace(&self) -> bool {
         self.ch.is_whitespace()
     }
 
-    pub fn read_number(&mut self) -> String {
+    fn read_number(&mut self) -> String {
         let position = self.position;
 
         while self.is_digit() {
@@ -76,7 +80,7 @@ impl Lexer {
         self.input[position..self.position].to_string()
     }
 
-    pub fn is_digit(&mut self) -> bool {
+    fn is_digit(&mut self) -> bool {
         self.ch.is_digit(10)
     }
 }
