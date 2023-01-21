@@ -3,5 +3,56 @@
 version = 3
 
 [[package]]
+name = "repl"
+version = "0.1.0"
+dependencies = [
+ "wervc",
+]
+
+[[package]]
 name = "werv"
 version = "0.1.0"
+dependencies = [
+ "repl",
+ "wervc",
+]
+
+[[package]]
+name = "wervc"
+version = "0.1.0"
+dependencies = [
+ "wervc_ast",
+ "wervc_eval",
+ "wervc_lexer",
+ "wervc_object",
+ "wervc_parser",
+]
+
+[[package]]
+name = "wervc_ast"
+version = "0.1.0"
+
+[[package]]
+name = "wervc_eval"
+version = "0.1.0"
+dependencies = [
+ "wervc_ast",
+ "wervc_object",
+ "wervc_parser",
+]
+
+[[package]]
+name = "wervc_lexer"
+version = "0.1.0"
+
+[[package]]
+name = "wervc_object"
+version = "0.1.0"
+
+[[package]]
+name = "wervc_parser"
+version = "0.1.0"
+dependencies = [
+ "wervc_ast",
+ "wervc_lexer",
+]
