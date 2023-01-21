@@ -8,10 +8,29 @@ pub enum CompileError {
     EvalError(EvalError),
 }
 
-pub fn parse(input: &str) -> Result<Object, CompileError> {
-    let mut parser = Parser::new(input);
-    let program = parser.parse_program().map_err(CompileError::ParserError)?;
-    let mut evaluator = Evaluator::new();
+pub struct Compiler {
+    evaluator: Evaluator,
+}
 
-    evaluator.eval(program).map_err(CompileError::EvalError)
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Compiler {
+    pub fn new() -> Compiler {
+        Compiler {
+            evaluator: Evaluator::new(),
+        }
+    }
+
+    pub fn parse(&mut self, input: &str) -> Result<Object, CompileError> {
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().map_err(CompileError::ParserError)?;
+
+        self.evaluator
+            .eval(program)
+            .map_err(CompileError::EvalError)
+    }
 }

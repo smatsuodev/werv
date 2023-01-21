@@ -9,7 +9,7 @@ fn main() {
 
         file.read_to_string(&mut input).unwrap();
 
-        let result = wervc::parse(&input).unwrap();
+        let result = wervc::Compiler::new().parse(&input).unwrap();
 
         println!("{}", result);
         return;

@@ -3,6 +3,8 @@ use std::io::{stdin, stdout, Write};
 const PROMPT: &str = ">> ";
 
 pub fn start() {
+    let mut compiler = wervc::Compiler::new();
+
     loop {
         print!("{PROMPT}");
         stdout().flush().expect("Failed to flush line");
@@ -11,7 +13,7 @@ pub fn start() {
 
         stdin().read_line(&mut line).expect("Failed to read line");
 
-        let result = match wervc::parse(&line) {
+        let result = match compiler.parse(&line) {
             Ok(o) => o,
             Err(e) => {
                 println!("{:?}", e);
