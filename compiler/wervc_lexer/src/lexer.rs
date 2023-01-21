@@ -1,4 +1,7 @@
-use crate::token::{Token, TokenKind::*};
+use crate::token::{
+    Token,
+    TokenKind::{self, *},
+};
 
 #[cfg(test)]
 mod test;
@@ -40,6 +43,7 @@ impl Lexer {
 
         let ch = self.ch;
         let kind = match ch {
+            '=' => Assign,
             '+' => Plus,
             '-' => Minus,
             '*' => Asterisk,
@@ -52,6 +56,12 @@ impl Lexer {
                 let literal = self.read_number();
 
                 return Token::new(Number, literal);
+            }
+            c if Lexer::is_ident_char(c) => {
+                let literal = self.read_ident();
+                let kind = TokenKind::lookup_ident(&literal);
+
+                return Token::new(kind, literal);
             }
             _ => Unknown,
         };
@@ -83,5 +93,19 @@ impl Lexer {
 
     fn is_digit(ch: char) -> bool {
         ch.is_ascii_digit()
+    }
+
+    fn read_ident(&mut self) -> String {
+        let position = self.position;
+
+        while Lexer::is_ident_char(self.ch) || Lexer::is_digit(self.ch) {
+            self.read_char();
+        }
+
+        self.input[position..self.position].to_string()
+    }
+
+    fn is_ident_char(ch: char) -> bool {
+        ch.is_ascii_alphabetic() || ch == '_'
     }
 }

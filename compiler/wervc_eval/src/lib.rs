@@ -1,18 +1,24 @@
+mod environment;
 pub mod error;
 #[cfg(test)]
 mod test;
 
+use environment::Environment;
 use error::EvalError;
 use wervc_ast::{BinaryExprKind, Expr, Node, Stmt};
 use wervc_object::Object::{self, *};
 
 type EResult = Result<Object, EvalError>;
 
-pub struct Evaluator {}
+pub struct Evaluator {
+    env: Environment,
+}
 
 impl Evaluator {
     pub fn new() -> Evaluator {
-        Evaluator {}
+        Evaluator {
+            env: Environment::new(),
+        }
     }
 
     pub fn eval(&mut self, node: Node) -> EResult {
@@ -51,9 +57,31 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::LetExpr { name, value } => self.eval_let_expr(*name, *value),
+            Expr::Ident(i) => self.eval_ident(i),
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_let_expr(&mut self, name: Expr, value: Expr) -> EResult {
+        if let Expr::Ident(name) = name {
+            let value = self.eval_expr(value)?;
+
+            self.env.insert(name, value.clone());
+
+            return Ok(value);
+        }
+
+        panic!("Unexpected eval error: ident required but got {:?}", name)
+    }
+
+    fn eval_ident(&mut self, name: String) -> EResult {
+        if let Some(value) = self.env.get(&name) {
+            return Ok(value.clone());
+        }
+
+        Err(EvalError::UndefinedVariable(name))
     }
 
     fn eval_binary_expr(&mut self, kind: BinaryExprKind, lhs: Expr, rhs: Expr) -> EResult {

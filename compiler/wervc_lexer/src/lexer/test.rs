@@ -48,3 +48,27 @@ fn lexer_arithmetic_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_let_stmt_test() {
+    let inputs = ["let x = 5;", "let y = 10"];
+    let expects = [
+        vec![
+            (Let, "let"),
+            (Ident, "x"),
+            (Assign, "="),
+            (Number, "5"),
+            (SemiColon, ";"),
+            (EOF, "\0"),
+        ],
+        vec![
+            (Let, "let"),
+            (Ident, "y"),
+            (Assign, "="),
+            (Number, "10"),
+            (EOF, "\0"),
+        ],
+    ];
+
+    loop_assert(inputs, expects);
+}

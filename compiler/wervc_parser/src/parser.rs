@@ -42,6 +42,10 @@ impl Parser {
         self.cur_token = self.lexer.next_token()
     }
 
+    fn peek(&self, kind: TokenKind) -> bool {
+        self.cur_token.kind() == kind
+    }
+
     fn consume(&mut self, kind: TokenKind) -> bool {
         if self.cur_token.kind() == kind {
             self.next_token();
@@ -90,9 +94,26 @@ impl Parser {
         Ok(ExprReturnStmt(expr))
     }
 
-    /// expr = add
+    /// expr = let_expr | add
     fn parse_expr(&mut self) -> PResult<Expr> {
+        if self.peek(Let) {
+            return self.parse_let_expr();
+        }
+
         self.parse_add()
+    }
+
+    /// let_expr = 'let' ident '=' expr
+    fn parse_let_expr(&mut self) -> PResult<Expr> {
+        self.expect(Let)?;
+
+        let name = Box::new(self.parse_ident()?);
+
+        self.expect(Assign)?;
+
+        let value = Box::new(self.parse_expr()?);
+
+        Ok(LetExpr { name, value })
     }
 
     /// add = mul ('+' mul | '-' mul)*
@@ -141,7 +162,7 @@ impl Parser {
         }
     }
 
-    /// primary = integer | '(' expr ')'
+    /// primary = '(' expr ')' | integer | ident
     fn parse_primary(&mut self) -> PResult<Expr> {
         if self.consume(LParen) {
             let expr = self.parse_expr()?;
@@ -151,7 +172,11 @@ impl Parser {
             return Ok(expr);
         }
 
-        self.parse_integer()
+        if self.peek(Number) {
+            return self.parse_integer();
+        }
+
+        self.parse_ident()
     }
 
     /// integer = [0-9]*
@@ -163,5 +188,13 @@ impl Parser {
             .map_err(ParserError::ParseIntError)?;
 
         Ok(Integer(literal))
+    }
+
+    /// ident = ([a-zA-Z] | '_') ([a-zA-Z0-9] | '_')*
+    fn parse_ident(&mut self) -> PResult<Expr> {
+        let token = self.expect(TokenKind::Ident)?;
+        let literal = token.literal().to_string();
+
+        Ok(Expr::Ident(literal))
     }
 }

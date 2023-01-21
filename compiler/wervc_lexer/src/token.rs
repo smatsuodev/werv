@@ -24,7 +24,9 @@ pub enum TokenKind {
     EOF,
 
     Number,
+    Ident,
 
+    Assign,
     Plus,
     Minus,
     Asterisk,
@@ -33,10 +35,21 @@ pub enum TokenKind {
     LParen,
     RParen,
     SemiColon,
+
+    Let,
 }
 
 impl Default for TokenKind {
     fn default() -> Self {
         TokenKind::EOF
+    }
+}
+
+impl TokenKind {
+    pub fn lookup_ident(literal: &str) -> TokenKind {
+        match literal {
+            "let" => Self::Let,
+            _ => Self::Ident,
+        }
     }
 }
