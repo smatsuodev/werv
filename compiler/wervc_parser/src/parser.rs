@@ -138,6 +138,7 @@ impl Parser {
         self.parse_integer()
     }
 
+    /// integer = [0-9]*
     fn parse_integer(&mut self) -> PResult<Expr> {
         let token = self.expect(Number)?;
         let literal = token

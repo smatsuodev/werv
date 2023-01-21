@@ -47,7 +47,7 @@ impl Lexer {
             '(' => LParen,
             ')' => RParen,
             '\0' => EOF,
-            c if c.is_digit(10) => {
+            c if Lexer::is_digit(c) => {
                 let literal = self.read_number();
 
                 return Token::new(Number, literal);
@@ -73,14 +73,14 @@ impl Lexer {
     fn read_number(&mut self) -> String {
         let position = self.position;
 
-        while self.is_digit() {
+        while Lexer::is_digit(self.ch) {
             self.read_char();
         }
 
         self.input[position..self.position].to_string()
     }
 
-    fn is_digit(&mut self) -> bool {
-        self.ch.is_digit(10)
+    fn is_digit(ch: char) -> bool {
+        ch.is_ascii_digit()
     }
 }
