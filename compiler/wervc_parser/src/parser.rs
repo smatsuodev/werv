@@ -84,7 +84,7 @@ impl Parser {
     }
 
     /// stmt = expr ';'?
-    pub fn parse_stmt(&mut self) -> PResult<Stmt> {
+    fn parse_stmt(&mut self) -> PResult<Stmt> {
         let expr = self.parse_expr()?;
 
         if self.consume(SemiColon) {
@@ -162,7 +162,7 @@ impl Parser {
         }
     }
 
-    /// primary = '(' expr ')' | integer | ident
+    /// primary = '(' expr ')' | block_expr | integer | ident
     fn parse_primary(&mut self) -> PResult<Expr> {
         if self.consume(LParen) {
             let expr = self.parse_expr()?;
@@ -172,11 +172,37 @@ impl Parser {
             return Ok(expr);
         }
 
+        if self.peek(LBrace) {
+            return self.parse_block_expr();
+        }
+
         if self.peek(Number) {
             return self.parse_integer();
         }
 
         self.parse_ident()
+    }
+
+    /// block_expr = '{' stmt* '}'
+    fn parse_block_expr(&mut self) -> PResult<Expr> {
+        self.expect(LBrace)?;
+
+        let mut stmts = Vec::new();
+
+        while !self.consume(RBrace) {
+            if self.consume(EOF) {
+                return Err(ParserError::UnexpectedToken {
+                    expected: RBrace,
+                    got: EOF,
+                });
+            }
+
+            let stmt = self.parse_stmt()?;
+
+            stmts.push(stmt);
+        }
+
+        Ok(BlockExpr(stmts))
     }
 
     /// integer = [0-9]*

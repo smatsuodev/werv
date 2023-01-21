@@ -1,5 +1,6 @@
-use super::Parser;
+use super::{error::ParserError, Parser};
 use wervc_ast::{BinaryExprKind::*, Expr::*, Stmt::*};
+use wervc_lexer::token::TokenKind;
 
 fn loop_assert<T, U, const N: usize>(inputs: [T; N], expects: [U; N], f: impl Fn(&mut Parser, U))
 where
@@ -13,8 +14,28 @@ where
 }
 
 #[test]
+fn parse_error_test() {
+    let inputs = ["{ 123"];
+    let expects = [ParserError::UnexpectedToken {
+        expected: TokenKind::RBrace,
+        got: TokenKind::EOF,
+    }];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(parser.parse_program(), Err(expect));
+    })
+}
+
+#[test]
 fn parse_stmt_test() {
-    let inputs = ["1 + 2;", "1 + 2", "let x = 1 + 2;", "let x = 1 + 2"];
+    let inputs = [
+        "1 + 2;",
+        "1 + 2",
+        "let x = 1 + 2;",
+        "let x = 1 + 2",
+        "{ 10 };",
+        "{ 10 }",
+    ];
     let expects = [
         ExprStmt(BinaryExpr {
             kind: Add,
@@ -42,6 +63,8 @@ fn parse_stmt_test() {
                 rhs: Box::new(Integer(2)),
             }),
         }),
+        ExprStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+        ExprReturnStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -116,5 +139,37 @@ fn parse_let_expr() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_let_expr().unwrap())
+    });
+}
+
+#[test]
+fn parse_block_expr() {
+    let inputs = [
+        "{ 10 }",
+        "{ let x = 10; x }",
+        "{ let x = 10; }",
+        "{ let x = { 10 } }",
+    ];
+    let expects = [
+        BlockExpr(vec![ExprReturnStmt(Integer(10))]),
+        BlockExpr(vec![
+            ExprStmt(LetExpr {
+                name: Box::new(Ident("x".to_string())),
+                value: Box::new(Integer(10)),
+            }),
+            ExprReturnStmt(Ident("x".to_string())),
+        ]),
+        BlockExpr(vec![ExprStmt(LetExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(Integer(10)),
+        })]),
+        BlockExpr(vec![ExprReturnStmt(LetExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+        })]),
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_block_expr().unwrap())
     });
 }

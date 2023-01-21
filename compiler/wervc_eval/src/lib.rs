@@ -17,8 +17,18 @@ pub struct Evaluator {
 impl Evaluator {
     pub fn new() -> Evaluator {
         Evaluator {
-            env: Environment::new(),
+            env: Environment::new(None),
         }
+    }
+
+    pub fn set_env(&mut self, env: Environment) {
+        self.env = env;
+    }
+
+    pub fn set_outer(&mut self, outer: Environment) {
+        let env = Environment::new(Some(Box::new(outer)));
+
+        self.env = env;
     }
 
     pub fn eval(&mut self, node: Node) -> EResult {
@@ -57,11 +67,27 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::BlockExpr(stmts) => self.eval_block_expr(stmts),
             Expr::LetExpr { name, value } => self.eval_let_expr(*name, *value),
             Expr::Ident(i) => self.eval_ident(i),
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_block_expr(&mut self, stmts: Vec<Stmt>) -> EResult {
+        // 内側のスコープ用に評価器を生成
+        let mut inner = Evaluator::new();
+
+        // 内側の環境のouterにブロックの外側のenvをクローン
+        inner.set_outer(self.env.clone());
+
+        let result = inner.eval_stmts(stmts)?;
+
+        // 外側のenvに内側の環境のouterをムーブ
+        self.set_env(inner.env.outer().unwrap());
+
+        Ok(result)
     }
 
     fn eval_let_expr(&mut self, name: Expr, value: Expr) -> EResult {

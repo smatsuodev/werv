@@ -32,9 +32,11 @@ pub enum TokenKind {
     Asterisk,
     Slash,
 
+    SemiColon,
     LParen,
     RParen,
-    SemiColon,
+    LBrace,
+    RBrace,
 
     Let,
 }

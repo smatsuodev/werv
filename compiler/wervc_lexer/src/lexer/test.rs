@@ -50,7 +50,7 @@ fn lexer_arithmetic_test() {
 }
 
 #[test]
-fn lexer_let_stmt_test() {
+fn lexer_let_expr_test() {
     let inputs = ["let x = 5;", "let y = 10"];
     let expects = [
         vec![
@@ -66,6 +66,34 @@ fn lexer_let_stmt_test() {
             (Ident, "y"),
             (Assign, "="),
             (Number, "10"),
+            (EOF, "\0"),
+        ],
+    ];
+
+    loop_assert(inputs, expects);
+}
+
+#[test]
+fn lexer_block_expr_test() {
+    let inputs = ["{ 10 }", "{ let x = 10; let y = 20; x + y }"];
+    let expects = [
+        vec![(LBrace, "{"), (Number, "10"), (RBrace, "}"), (EOF, "\0")],
+        vec![
+            (LBrace, "{"),
+            (Let, "let"),
+            (Ident, "x"),
+            (Assign, "="),
+            (Number, "10"),
+            (SemiColon, ";"),
+            (Let, "let"),
+            (Ident, "y"),
+            (Assign, "="),
+            (Number, "20"),
+            (SemiColon, ";"),
+            (Ident, "x"),
+            (Plus, "+"),
+            (Ident, "y"),
+            (RBrace, "}"),
             (EOF, "\0"),
         ],
     ];

@@ -48,9 +48,11 @@ impl Lexer {
             '-' => Minus,
             '*' => Asterisk,
             '/' => Slash,
+            ';' => SemiColon,
             '(' => LParen,
             ')' => RParen,
-            ';' => SemiColon,
+            '{' => LBrace,
+            '}' => RBrace,
             '\0' => EOF,
             c if Lexer::is_digit(c) => {
                 let literal = self.read_number();

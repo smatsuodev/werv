@@ -24,6 +24,7 @@ pub enum Expr {
         name: Box<Expr>,
         value: Box<Expr>,
     },
+    BlockExpr(Vec<Stmt>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
