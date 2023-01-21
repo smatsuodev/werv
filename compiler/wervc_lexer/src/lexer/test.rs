@@ -114,3 +114,26 @@ fn lexer_assign_expr_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_call_expr_test() {
+    let inputs = ["add(1, 2 * 3, 4 + 5);"];
+    let expects = [vec![
+        (Ident, "add"),
+        (LParen, "("),
+        (Number, "1"),
+        (Comma, ","),
+        (Number, "2"),
+        (Asterisk, "*"),
+        (Number, "3"),
+        (Comma, ","),
+        (Number, "4"),
+        (Plus, "+"),
+        (Number, "5"),
+        (RParen, ")"),
+        (SemiColon, ";"),
+        (EOF, "\0"),
+    ]];
+
+    loop_assert(inputs, expects);
+}

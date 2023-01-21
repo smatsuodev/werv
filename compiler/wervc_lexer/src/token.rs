@@ -33,6 +33,8 @@ pub enum TokenKind {
     Slash,
 
     SemiColon,
+    Comma,
+
     LParen,
     RParen,
     LBrace,

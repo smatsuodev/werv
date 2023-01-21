@@ -15,11 +15,14 @@ where
 
 #[test]
 fn parse_error_test() {
-    let inputs = ["{ 123"];
-    let expects = [ParserError::UnexpectedToken {
-        expected: TokenKind::RBrace,
-        got: TokenKind::EOF,
-    }];
+    let inputs = ["{ 123", "10 10;"];
+    let expects = [
+        ParserError::UnexpectedToken {
+            expected: TokenKind::RBrace,
+            got: TokenKind::EOF,
+        },
+        ParserError::RequiredSemiColon,
+    ];
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(parser.parse_program(), Err(expect));
@@ -216,5 +219,24 @@ fn parse_assign_test() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_assign().unwrap())
+    });
+}
+
+#[test]
+fn parse_call_test() {
+    let inputs = ["foo()", "foo(1,2,3)"];
+    let expects = [
+        CallExpr {
+            func: Box::new(Ident("foo".to_string())),
+            args: vec![],
+        },
+        CallExpr {
+            func: Box::new(Ident("foo".to_string())),
+            args: vec![Integer(1), Integer(2), Integer(3)],
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_call().unwrap())
     });
 }

@@ -1,8 +1,10 @@
+mod builtin;
 mod environment;
 pub mod error;
 #[cfg(test)]
 mod test;
 
+use builtin::{call_builtin, is_builtin};
 use environment::Environment;
 use error::EvalError;
 use wervc_ast::{BinaryExprKind, Expr, Node, Stmt};
@@ -48,10 +50,6 @@ impl Evaluator {
         for stmt in stmts {
             let value = self.eval_stmt(stmt)?;
 
-            if result != Unit {
-                return Err(EvalError::UnexpectedReturnedValue(result));
-            }
-
             result = value;
         }
 
@@ -70,6 +68,7 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::CallExpr { func, args } => self.eval_call_expr(*func, args),
             Expr::AssignExpr { name, value } => self.eval_assign_expr(*name, *value),
             Expr::BlockExpr(stmts) => self.eval_block_expr(stmts),
             Expr::LetExpr { name, value } => self.eval_let_expr(*name, *value),
@@ -77,6 +76,45 @@ impl Evaluator {
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_call_expr(&mut self, func: Expr, args: Vec<Expr>) -> EResult {
+        if is_builtin(&func) {
+            let mut objects = Vec::new();
+
+            for arg in args {
+                objects.push(self.eval_expr(arg)?);
+            }
+
+            return Ok(call_builtin(&func, &objects).unwrap());
+        }
+
+        let func = self.eval_expr(func)?;
+
+        if let FunctionLiteral { params, body } = &func {
+            if args.len() != params.len() {
+                return Err(EvalError::UnmatchedArgsLen {
+                    expected: params.len(),
+                    got: args.len(),
+                });
+            }
+
+            let mut env = Environment::new(Some(Box::new(self.env.clone())));
+
+            for (arg, param) in args.into_iter().zip(params) {
+                let value = self.eval_expr(arg)?;
+
+                env.insert(param.clone(), value);
+            }
+
+            let mut inner = Evaluator::new();
+
+            inner.set_env(env);
+
+            return inner.eval_expr(body.clone());
+        }
+
+        Err(EvalError::UnexpectedObject(func))
     }
 
     fn eval_assign_expr(&mut self, name: Expr, value: Expr) -> EResult {

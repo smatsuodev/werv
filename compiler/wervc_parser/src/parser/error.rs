@@ -5,4 +5,5 @@ use wervc_lexer::token::TokenKind;
 pub enum ParserError {
     UnexpectedToken { expected: TokenKind, got: TokenKind },
     ParseIntError(ParseIntError),
+    RequiredSemiColon,
 }

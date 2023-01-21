@@ -49,6 +49,7 @@ impl Lexer {
             '*' => Asterisk,
             '/' => Slash,
             ';' => SemiColon,
+            ',' => Comma,
             '(' => LParen,
             ')' => RParen,
             '{' => LBrace,

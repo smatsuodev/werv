@@ -2,6 +2,7 @@ pub mod error;
 #[cfg(test)]
 mod test;
 
+use self::error::ParserError;
 use wervc_ast::{
     BinaryExprKind::*,
     Expr::{self, *},
@@ -15,8 +16,6 @@ use wervc_lexer::{
         TokenKind::{self, *},
     },
 };
-
-use self::error::ParserError;
 
 pub struct Parser {
     lexer: Lexer,
@@ -73,10 +72,16 @@ impl Parser {
     /// program = stmt*
     pub fn parse_program(&mut self) -> PResult<Node> {
         let mut stmts = Vec::new();
+        let mut is_returned = false;
 
         while !self.consume(EOF) {
             let stmt = self.parse_stmt()?;
 
+            if is_returned {
+                return Err(ParserError::RequiredSemiColon);
+            }
+
+            is_returned = matches!(stmt, ExprReturnStmt(_));
             stmts.push(stmt);
         }
 
@@ -153,27 +158,58 @@ impl Parser {
         }
     }
 
-    /// mul = primary ('*' primary | '/' primary)*
+    /// mul = call ('*' primary | '/' call)*
     fn parse_mul(&mut self) -> PResult<Expr> {
-        let mut node = self.parse_primary()?;
+        let mut node = self.parse_call()?;
 
         loop {
             if self.consume(Asterisk) {
                 node = BinaryExpr {
                     kind: Mul,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_primary()?),
+                    rhs: Box::new(self.parse_call()?),
                 };
             } else if self.consume(Slash) {
                 node = BinaryExpr {
                     kind: Div,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_primary()?),
+                    rhs: Box::new(self.parse_call()?),
                 };
             } else {
                 return Ok(node);
             }
         }
+    }
+
+    /// call = primary ('(' expr,* ')')?
+    fn parse_call(&mut self) -> PResult<Expr> {
+        let node = self.parse_primary()?;
+
+        if self.consume(LParen) {
+            let mut args = Vec::new();
+
+            if self.consume(RParen) {
+                return Ok(CallExpr {
+                    func: Box::new(node),
+                    args,
+                });
+            }
+
+            args.push(self.parse_expr()?);
+
+            while self.consume(Comma) {
+                args.push(self.parse_expr()?);
+            }
+
+            self.expect(RParen)?;
+
+            return Ok(CallExpr {
+                func: Box::new(node),
+                args,
+            });
+        }
+
+        Ok(node)
     }
 
     /// primary = '(' expr ')' | block_expr | integer | ident

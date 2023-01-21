@@ -31,9 +31,8 @@ where
 
 #[test]
 fn eval_error_test() {
-    let inputs = ["1+2 2+3;", "x;", "{ x }", "{ let x = 10; x }; x", "10 = 10"];
+    let inputs = ["x;", "{ x }", "{ let x = 10; x }; x", "10 = 10"];
     let expects = [
-        Err(EvalError::UnexpectedReturnedValue(Integer(3))),
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
@@ -120,9 +119,17 @@ fn eval_assign_expr_test() {
     let inputs = [
         "let x = 10; x = 20; x",
         "let x = 10; { x = 20; x }",
-        "let x = 10; { x = 20; } x",
+        "let x = 10; { x = 20; }; x",
     ];
     let expects = [Integer(20), Integer(20), Integer(20)];
+
+    loop_assert_unwrap(inputs, expects);
+}
+
+#[test]
+fn eval_call_expr_test() {
+    let inputs = ["print(10);", "println(20);", "let x = 10; print(x);"];
+    let expects = [Unit, Unit, Unit];
 
     loop_assert_unwrap(inputs, expects);
 }
