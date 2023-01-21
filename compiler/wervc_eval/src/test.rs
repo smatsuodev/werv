@@ -1,4 +1,5 @@
 use crate::{error::EvalError, EResult, Evaluator};
+use wervc_ast::Expr;
 use wervc_object::Object::{self, *};
 use wervc_parser::parser::Parser;
 
@@ -30,12 +31,15 @@ where
 
 #[test]
 fn eval_error_test() {
-    let inputs = ["1+2 2+3;", "x;", "{ x }", "{ let x = 10; x }; x"];
+    let inputs = ["1+2 2+3;", "x;", "{ x }", "{ let x = 10; x }; x", "10 = 10"];
     let expects = [
         Err(EvalError::UnexpectedReturnedValue(Integer(3))),
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
+        Err(EvalError::IdentRequired {
+            got: Expr::Integer(10),
+        }),
     ];
 
     loop_assert(inputs, expects);
@@ -98,7 +102,7 @@ fn eval_let_expr_test() {
 }
 
 #[test]
-fn eval_block_expr() {
+fn eval_block_expr_test() {
     let inputs = [
         "{ 10 }",
         "{ 10; }",
@@ -107,6 +111,18 @@ fn eval_block_expr() {
         "let x = 10; { let y = { x }; y }",
     ];
     let expects = [Integer(10), Unit, Integer(10), Integer(10), Integer(10)];
+
+    loop_assert_unwrap(inputs, expects);
+}
+
+#[test]
+fn eval_assign_expr_test() {
+    let inputs = [
+        "let x = 10; x = 20; x",
+        "let x = 10; { x = 20; x }",
+        "let x = 10; { x = 20; } x",
+    ];
+    let expects = [Integer(20), Integer(20), Integer(20)];
 
     loop_assert_unwrap(inputs, expects);
 }

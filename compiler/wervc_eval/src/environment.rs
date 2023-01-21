@@ -38,4 +38,16 @@ impl Environment {
     pub fn insert(&mut self, key: String, value: Object) -> Option<Object> {
         self.store.insert(key, value)
     }
+
+    pub fn update(&mut self, key: String, value: Object) -> Option<Object> {
+        let result = self.store.insert(key.clone(), value.clone());
+
+        if result.is_none() {
+            if let Some(outer) = &mut self.outer {
+                return outer.update(key, value);
+            }
+        }
+
+        result
+    }
 }

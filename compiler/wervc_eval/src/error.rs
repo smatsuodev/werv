@@ -6,4 +6,5 @@ pub enum EvalError {
     UnexpectedObject(Object),
     UnexpectedReturnedValue(Object),
     UndefinedVariable(String),
+    IdentRequired { got: Expr },
 }

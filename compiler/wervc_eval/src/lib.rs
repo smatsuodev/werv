@@ -13,6 +13,11 @@ type EResult = Result<Object, EvalError>;
 pub struct Evaluator {
     env: Environment,
 }
+impl Default for Evaluator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Evaluator {
     pub fn new() -> Evaluator {
@@ -65,12 +70,27 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::AssignExpr { name, value } => self.eval_assign_expr(*name, *value),
             Expr::BlockExpr(stmts) => self.eval_block_expr(stmts),
             Expr::LetExpr { name, value } => self.eval_let_expr(*name, *value),
             Expr::Ident(i) => self.eval_ident(i),
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_assign_expr(&mut self, name: Expr, value: Expr) -> EResult {
+        if let Expr::Ident(name) = &name {
+            let value = self.eval_expr(value)?;
+
+            self.env
+                .update(name.clone(), value.clone())
+                .ok_or_else(|| EvalError::UndefinedVariable(name.clone()))?;
+
+            return Ok(value);
+        }
+
+        Err(EvalError::IdentRequired { got: name })
     }
 
     fn eval_block_expr(&mut self, stmts: Vec<Stmt>) -> EResult {
@@ -109,11 +129,11 @@ impl Evaluator {
     }
 
     fn eval_binary_expr(&mut self, kind: BinaryExprKind, lhs: Expr, rhs: Expr) -> EResult {
-        let lhs = self.eval_expr(lhs)?;
-        let rhs = self.eval_expr(rhs)?;
+        let lhs_obj = self.eval_expr(lhs)?;
+        let rhs_obj = self.eval_expr(rhs)?;
 
-        if let Integer(lhs) = lhs {
-            if let Integer(rhs) = rhs {
+        if let Integer(lhs) = lhs_obj {
+            if let Integer(rhs) = rhs_obj {
                 let value = match kind {
                     BinaryExprKind::Add => lhs + rhs,
                     BinaryExprKind::Sub => lhs - rhs,
@@ -124,10 +144,10 @@ impl Evaluator {
                 return Ok(Integer(value));
             }
 
-            return Err(EvalError::UnexpectedObject(rhs));
+            return Err(EvalError::UnexpectedObject(rhs_obj));
         }
 
-        Err(EvalError::UnexpectedObject(lhs))
+        Err(EvalError::UnexpectedObject(lhs_obj))
     }
 
     fn eval_integer(&mut self, value: isize) -> EResult {

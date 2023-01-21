@@ -35,6 +35,8 @@ fn parse_stmt_test() {
         "let x = 1 + 2",
         "{ 10 };",
         "{ 10 }",
+        "x = 1 + 2;",
+        "x = 1 + 2",
     ];
     let expects = [
         ExprStmt(BinaryExpr {
@@ -65,6 +67,22 @@ fn parse_stmt_test() {
         }),
         ExprStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
         ExprReturnStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+        ExprStmt(AssignExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(BinaryExpr {
+                kind: Add,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+        }),
+        ExprReturnStmt(AssignExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(BinaryExpr {
+                kind: Add,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -171,5 +189,32 @@ fn parse_block_expr() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_block_expr().unwrap())
+    });
+}
+
+#[test]
+fn parse_assign_test() {
+    let inputs = ["x = 1 + 2", "x = y", "x = { 10 }"];
+    let expects = [
+        AssignExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(BinaryExpr {
+                kind: Add,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+        },
+        AssignExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(Ident("y".to_string())),
+        },
+        AssignExpr {
+            name: Box::new(Ident("x".to_string())),
+            value: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_assign().unwrap())
     });
 }

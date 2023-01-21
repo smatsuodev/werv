@@ -100,3 +100,17 @@ fn lexer_block_expr_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_assign_expr_test() {
+    let inputs = ["x = 10;"];
+    let expects = [vec![
+        (Ident, "x"),
+        (Assign, "="),
+        (Number, "10"),
+        (SemiColon, ";"),
+        (EOF, "\0"),
+    ]];
+
+    loop_assert(inputs, expects);
+}

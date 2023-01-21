@@ -3,7 +3,7 @@ pub mod error;
 mod test;
 
 use wervc_ast::{
-    BinaryExprKind::*,
+    BinaryExprKind::{self, *},
     Expr::{self, *},
     Node,
     Stmt::{self, *},
@@ -100,7 +100,7 @@ impl Parser {
             return self.parse_let_expr();
         }
 
-        self.parse_add()
+        self.parse_assign()
     }
 
     /// let_expr = 'let' ident '=' expr
@@ -109,11 +109,25 @@ impl Parser {
 
         let name = Box::new(self.parse_ident()?);
 
-        self.expect(Assign)?;
+        self.expect(TokenKind::Assign)?;
 
         let value = Box::new(self.parse_expr()?);
 
         Ok(LetExpr { name, value })
+    }
+
+    /// assign = add ('=' add)?
+    fn parse_assign(&mut self) -> PResult<Expr> {
+        let node = self.parse_add()?;
+
+        if self.consume(TokenKind::Assign) {
+            return Ok(AssignExpr {
+                name: Box::new(node),
+                value: Box::new(self.parse_add()?),
+            });
+        }
+
+        Ok(node)
     }
 
     /// add = mul ('+' mul | '-' mul)*
