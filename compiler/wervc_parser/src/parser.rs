@@ -4,7 +4,7 @@ mod test;
 
 use self::error::ParserError;
 use wervc_ast::{
-    BinaryExprKind::*,
+    BinaryExprKind::{self, *},
     Expr::{self, *},
     Node,
     Stmt::{self, *},
@@ -99,10 +99,14 @@ impl Parser {
         Ok(ExprReturnStmt(expr))
     }
 
-    /// expr = let_expr | add
+    /// expr = let_expr | if_expr | assign
     fn parse_expr(&mut self) -> PResult<Expr> {
         if self.peek(Let) {
             return self.parse_let_expr();
+        }
+
+        if self.peek(If) {
+            return self.parse_if_expr();
         }
 
         self.parse_assign()
@@ -150,18 +154,84 @@ impl Parser {
         Ok(LetExpr { name, value })
     }
 
+    /// if_expr = 'if' expr expr ('else' expr)?
+    fn parse_if_expr(&mut self) -> PResult<Expr> {
+        self.expect(If)?;
+
+        let condition = Box::new(self.parse_expr()?);
+        let consequence = Box::new(self.parse_expr()?);
+        let alternative = if self.consume(Else) {
+            Some(Box::new(self.parse_expr()?))
+        } else {
+            None
+        };
+
+        Ok(IfExpr {
+            condition,
+            consequence,
+            alternative,
+        })
+    }
+
     /// assign = add ('=' add)?
     fn parse_assign(&mut self) -> PResult<Expr> {
-        let node = self.parse_add()?;
+        let node = self.parse_relation()?;
 
         if self.consume(TokenKind::Assign) {
             return Ok(AssignExpr {
                 name: Box::new(node),
-                value: Box::new(self.parse_add()?),
+                value: Box::new(self.parse_relation()?),
             });
         }
 
         Ok(node)
+    }
+
+    /// relation = add ('==' add | '!=' add | '<' add | '<=' add | '>' add | '>=' add)*
+    fn parse_relation(&mut self) -> PResult<Expr> {
+        let mut node = self.parse_add()?;
+
+        loop {
+            if self.consume(TokenKind::Eq) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Eq,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else if self.consume(TokenKind::Ne) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Ne,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else if self.consume(TokenKind::Lt) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Lt,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else if self.consume(TokenKind::Le) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Le,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else if self.consume(TokenKind::Gt) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Gt,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else if self.consume(TokenKind::Ge) {
+                node = BinaryExpr {
+                    kind: BinaryExprKind::Ge,
+                    lhs: Box::new(node),
+                    rhs: Box::new(self.parse_add()?),
+                };
+            } else {
+                return Ok(node);
+            }
+        }
     }
 
     /// add = mul ('+' mul | '-' mul)*
@@ -241,7 +311,7 @@ impl Parser {
         Ok(node)
     }
 
-    /// primary = '(' expr ')' | block_expr | integer | ident
+    /// primary = '(' expr ')' | block_expr | integer | ident | bool
     fn parse_primary(&mut self) -> PResult<Expr> {
         if self.consume(LParen) {
             let expr = self.parse_expr()?;
@@ -259,7 +329,11 @@ impl Parser {
             return self.parse_integer();
         }
 
-        self.parse_ident()
+        if self.peek(TokenKind::Ident) {
+            return self.parse_ident();
+        }
+
+        self.parse_bool()
     }
 
     /// block_expr = '{' stmt* '}'
@@ -301,5 +375,16 @@ impl Parser {
         let literal = token.literal().to_string();
 
         Ok(Expr::Ident(literal))
+    }
+
+    /// bool = 'true' | 'false'
+    fn parse_bool(&mut self) -> PResult<Expr> {
+        if self.consume(True) {
+            return Ok(Boolean(true));
+        }
+
+        self.expect(False)?;
+
+        Ok(Boolean(false))
     }
 }

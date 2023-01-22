@@ -266,3 +266,92 @@ fn parse_call_test() {
         assert_eq!(expect, parser.parse_call().unwrap())
     });
 }
+
+#[test]
+fn parse_relation_test() {
+    let inputs = ["1 < 2", "1 <= 2", "1 > 2", "1 >= 2", "1 == 2", "1 != 2"];
+    let expects = [
+        BinaryExpr {
+            kind: Lt,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+        BinaryExpr {
+            kind: Le,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+        BinaryExpr {
+            kind: Gt,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+        BinaryExpr {
+            kind: Ge,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+        BinaryExpr {
+            kind: Eq,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+        BinaryExpr {
+            kind: Ne,
+            lhs: Box::new(Integer(1)),
+            rhs: Box::new(Integer(2)),
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_relation().unwrap())
+    });
+}
+
+#[test]
+fn parse_if_expr_test() {
+    let inputs = [
+        "if 1 < 2 { 10 } else { 20 }",
+        "if 1 < 2 { 10 }",
+        "if true false",
+    ];
+    let expects = [
+        IfExpr {
+            condition: Box::new(BinaryExpr {
+                kind: Lt,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+            consequence: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+            alternative: Some(Box::new(BlockExpr(vec![ExprReturnStmt(Integer(20))]))),
+        },
+        IfExpr {
+            condition: Box::new(BinaryExpr {
+                kind: Lt,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+            consequence: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+            alternative: None,
+        },
+        IfExpr {
+            condition: Box::new(Boolean(true)),
+            consequence: Box::new(Boolean(false)),
+            alternative: None,
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_if_expr().unwrap())
+    });
+}
+
+#[test]
+fn parse_bool_test() {
+    let inputs = ["true", "false"];
+    let expects = [Boolean(true), Boolean(false)];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_bool().unwrap())
+    });
+}

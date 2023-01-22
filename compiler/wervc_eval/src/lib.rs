@@ -68,6 +68,12 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::Boolean(b) => self.eval_boolean(b),
+            Expr::IfExpr {
+                condition,
+                consequence,
+                alternative,
+            } => self.eval_if_expr(*condition, *consequence, alternative),
             Expr::FunctionDefExpr { name, params, body } => {
                 self.eval_function_def_expr(*name, params, *body)
             }
@@ -79,6 +85,31 @@ impl Evaluator {
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_boolean(&mut self, value: bool) -> EResult {
+        Ok(Boolean(value))
+    }
+
+    fn eval_if_expr(
+        &mut self,
+        condition: Expr,
+        consequence: Expr,
+        alternative: Option<Box<Expr>>,
+    ) -> EResult {
+        let condition = self.eval_expr(condition)?;
+
+        if let Boolean(true) = condition {
+            return self.eval_expr(consequence);
+        } else if let Boolean(false) = condition {
+            if let Some(alternative) = alternative {
+                return self.eval_expr(*alternative);
+            }
+
+            return Ok(Unit);
+        }
+
+        Err(EvalError::UnexpectedObject(condition))
     }
 
     fn eval_function_def_expr(&mut self, name: Expr, params: Vec<Expr>, body: Expr) -> EResult {
@@ -192,16 +223,31 @@ impl Evaluator {
         let lhs_obj = self.eval_expr(lhs)?;
         let rhs_obj = self.eval_expr(rhs)?;
 
+        if kind == BinaryExprKind::Eq {
+            return Ok(Boolean(lhs_obj == rhs_obj));
+        }
+        if kind == BinaryExprKind::Ne {
+            return Ok(Boolean(lhs_obj != rhs_obj));
+        }
+
         if let Integer(lhs) = lhs_obj {
             if let Integer(rhs) = rhs_obj {
                 let value = match kind {
-                    BinaryExprKind::Add => lhs + rhs,
-                    BinaryExprKind::Sub => lhs - rhs,
-                    BinaryExprKind::Mul => lhs * rhs,
-                    BinaryExprKind::Div => lhs / rhs,
+                    BinaryExprKind::Add => Integer(lhs + rhs),
+                    BinaryExprKind::Sub => Integer(lhs - rhs),
+                    BinaryExprKind::Mul => Integer(lhs * rhs),
+                    BinaryExprKind::Div => Integer(lhs / rhs),
+                    BinaryExprKind::Lt => Boolean(lhs < rhs),
+                    BinaryExprKind::Le => Boolean(lhs <= rhs),
+                    BinaryExprKind::Gt => Boolean(lhs > rhs),
+                    BinaryExprKind::Ge => Boolean(lhs >= rhs),
+                    _ => panic!(
+                        "Unexpected eval error: {:?} operator has evaluated impossibly",
+                        kind
+                    ),
                 };
 
-                return Ok(Integer(value));
+                return Ok(value);
             }
 
             return Err(EvalError::UnexpectedObject(rhs_obj));

@@ -17,6 +17,7 @@ pub enum Stmt {
 pub enum Expr {
     Integer(isize),
     Ident(String),
+    Boolean(bool),
     BinaryExpr {
         kind: BinaryExprKind,
         lhs: Box<Expr>,
@@ -40,6 +41,11 @@ pub enum Expr {
         params: Vec<Expr>,
         body: Box<Expr>,
     },
+    IfExpr {
+        condition: Box<Expr>,
+        consequence: Box<Expr>,
+        alternative: Option<Box<Expr>>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -48,18 +54,10 @@ pub enum BinaryExprKind {
     Sub,
     Mul,
     Div,
-}
-impl Display for BinaryExprKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Add => "+",
-                Self::Sub => "-",
-                Self::Mul => "*",
-                Self::Div => "/",
-            }
-        )
-    }
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 }

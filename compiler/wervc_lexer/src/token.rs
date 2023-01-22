@@ -31,6 +31,14 @@ pub enum TokenKind {
     Minus,
     Asterisk,
     Slash,
+    Bang,
+
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 
     SemiColon,
     Comma,
@@ -41,6 +49,10 @@ pub enum TokenKind {
     RBrace,
 
     Let,
+    If,
+    Else,
+    True,
+    False,
 }
 
 impl Default for TokenKind {
@@ -53,6 +65,10 @@ impl TokenKind {
     pub fn lookup_ident(literal: &str) -> TokenKind {
         match literal {
             "let" => Self::Let,
+            "if" => Self::If,
+            "else" => Self::Else,
+            "true" => Self::True,
+            "false" => Self::False,
             _ => Self::Ident,
         }
     }

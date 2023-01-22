@@ -31,7 +31,7 @@ where
 
 #[test]
 fn eval_error_test() {
-    let inputs = ["x;", "{ x }", "{ let x = 10; x }; x", "10 = 10"];
+    let inputs = ["x;", "{ x }", "{ let x = 10; x }; x", "10 = 10", "if 1 1"];
     let expects = [
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
@@ -39,6 +39,7 @@ fn eval_error_test() {
         Err(EvalError::IdentRequired {
             got: Expr::Integer(10),
         }),
+        Err(EvalError::UnexpectedObject(Integer(1))),
     ];
 
     loop_assert(inputs, expects);
@@ -161,6 +162,56 @@ fn eval_assign_expr_test() {
 fn eval_call_expr_test() {
     let inputs = ["print(10);", "println(20);", "let x = 10; print(x);"];
     let expects = [Unit, Unit, Unit];
+
+    loop_assert_unwrap(inputs, expects);
+}
+
+#[test]
+fn eval_if_expr_test() {
+    let inputs = [
+        "if true 10",
+        "if false 10",
+        "if true { 10 } else { 20 }",
+        "if false { 10 } else { 20 }",
+        "let x = 10; if x == 10 { 20 } else { 30 }",
+        "let x = 10; if x == 20 { 20 } else { 30 }",
+        "let x = 10; if x < 20 { 20 } else { 30 }",
+        "let x = 10; if x > 20 { 20 } else { 30 }",
+        "let x = 10; if x <= 20 { 20 } else { 30 }",
+        "let x = 10; if x >= 20 { 20 } else { 30 }",
+        "let x = 10; if x != 20 { 20 } else { 30 }",
+        "let x = 10; if x != 10 { 20 } else { 30 }",
+        "let x = 10; if x == 10 { 20 }",
+        "let x = 10; if x == 20 { 20 }",
+        "let x = 10; if x < 20 { 20 }",
+        "let x = 10; if x > 20 { 20 }",
+        "let x = 10; if x <= 20 { 20 }",
+        "let x = 10; if x >= 20 { 20 }",
+        "let x = 10; if x != 20 { 20 }",
+        "let x = 10; if x != 10 { 20 }",
+    ];
+    let expects = [
+        Integer(10),
+        Unit,
+        Integer(10),
+        Integer(20),
+        Integer(20),
+        Integer(30),
+        Integer(20),
+        Integer(30),
+        Integer(20),
+        Integer(30),
+        Integer(20),
+        Integer(30),
+        Integer(20),
+        Unit,
+        Integer(20),
+        Unit,
+        Integer(20),
+        Unit,
+        Integer(20),
+        Unit,
+    ];
 
     loop_assert_unwrap(inputs, expects);
 }

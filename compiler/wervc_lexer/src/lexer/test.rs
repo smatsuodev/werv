@@ -137,3 +137,44 @@ fn lexer_call_expr_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_if_expr_test() {
+    let inputs = ["if (x < y) { x } else { y }", "if true false"];
+    let expects = [
+        vec![
+            (If, "if"),
+            (LParen, "("),
+            (Ident, "x"),
+            (Lt, "<"),
+            (Ident, "y"),
+            (RParen, ")"),
+            (LBrace, "{"),
+            (Ident, "x"),
+            (RBrace, "}"),
+            (Else, "else"),
+            (LBrace, "{"),
+            (Ident, "y"),
+            (RBrace, "}"),
+            (EOF, "\0"),
+        ],
+        vec![(If, "if"), (True, "true"), (False, "false"), (EOF, "\0")],
+    ];
+
+    loop_assert(inputs, expects);
+}
+
+#[test]
+fn lexer_relation_test() {
+    let inputs = ["1 < 2", "1 > 2", "1 == 2", "1 != 2", "1 <= 2", "1 >= 2"];
+    let expects = [
+        vec![(Number, "1"), (Lt, "<"), (Number, "2"), (EOF, "\0")],
+        vec![(Number, "1"), (Gt, ">"), (Number, "2"), (EOF, "\0")],
+        vec![(Number, "1"), (Eq, "=="), (Number, "2"), (EOF, "\0")],
+        vec![(Number, "1"), (Ne, "!="), (Number, "2"), (EOF, "\0")],
+        vec![(Number, "1"), (Le, "<="), (Number, "2"), (EOF, "\0")],
+        vec![(Number, "1"), (Ge, ">="), (Number, "2"), (EOF, "\0")],
+    ];
+
+    loop_assert(inputs, expects);
+}

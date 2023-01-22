@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::token::{
     Token,
     TokenKind::{self, *},
@@ -38,12 +40,60 @@ impl Lexer {
         self.read_position += 1;
     }
 
+    fn peek_char(&self) -> char {
+        if self.read_position >= self.input.len() {
+            '\0'
+        } else {
+            self.input.chars().nth(self.read_position).unwrap()
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
 
         let ch = self.ch;
+        let mut literal = ch.to_string();
         let kind = match ch {
-            '=' => Assign,
+            '=' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{ch}=");
+
+                    Eq
+                } else {
+                    Assign
+                }
+            }
+            '<' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{ch}=");
+
+                    Le
+                } else {
+                    Lt
+                }
+            }
+            '>' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{ch}=");
+
+                    Ge
+                } else {
+                    Gt
+                }
+            }
+            '!' => {
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    literal = format!("{ch}=");
+
+                    Ne
+                } else {
+                    Bang
+                }
+            }
             '+' => Plus,
             '-' => Minus,
             '*' => Asterisk,
@@ -71,7 +121,7 @@ impl Lexer {
 
         self.read_char();
 
-        Token::new(kind, ch)
+        Token::new(kind, literal)
     }
 
     fn eat_whitespace(&mut self) {
