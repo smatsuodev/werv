@@ -7,7 +7,7 @@ mod test;
 use builtin::{call_builtin, is_builtin};
 use environment::Environment;
 use error::EvalError;
-use wervc_ast::{BinaryExprKind, Expr, Node, Stmt};
+use wervc_ast::{BinaryExprKind, Expr, Node, Stmt, UnaryExprKind};
 use wervc_object::Object::{self, *};
 
 type EResult = Result<Object, EvalError>;
@@ -85,6 +85,7 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::UnaryExpr { kind, expr } => self.eval_unary_expr(kind, *expr),
             Expr::ReturnExpr(e) => self.eval_return_expr(*e),
             Expr::Boolean(b) => self.eval_boolean(b),
             Expr::IfExpr {
@@ -103,6 +104,25 @@ impl Evaluator {
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_unary_expr(&mut self, kind: UnaryExprKind, expr: Expr) -> EResult {
+        let value = self.eval_expr(expr)?;
+
+        match kind {
+            UnaryExprKind::Minus => {
+                if let Integer(value) = value {
+                    return Ok(Integer(-value));
+                }
+            }
+            UnaryExprKind::Not => {
+                if let Boolean(value) = value {
+                    return Ok(Boolean(!value));
+                }
+            }
+        }
+
+        Err(EvalError::UnexpectedObject(value))
     }
 
     fn eval_return_expr(&mut self, e: Expr) -> EResult {

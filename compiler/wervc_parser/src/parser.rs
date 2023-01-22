@@ -8,6 +8,7 @@ use wervc_ast::{
     Expr::{self, *},
     Node,
     Stmt::{self, *},
+    UnaryExprKind,
 };
 use wervc_lexer::{
     lexer::Lexer,
@@ -268,7 +269,7 @@ impl Parser {
         }
     }
 
-    /// mul = call ('*' primary | '/' call)*
+    /// mul = call ('*' call | '/' call)*
     fn parse_mul(&mut self) -> PResult<Expr> {
         let mut node = self.parse_call()?;
 
@@ -291,9 +292,9 @@ impl Parser {
         }
     }
 
-    /// call = primary ('(' expr,* ')')?
+    /// call = unary ('(' expr,* ')')?
     fn parse_call(&mut self) -> PResult<Expr> {
-        let node = self.parse_primary()?;
+        let node = self.parse_unary()?;
 
         if self.consume(LParen) {
             let mut args = Vec::new();
@@ -320,6 +321,25 @@ impl Parser {
         }
 
         Ok(node)
+    }
+
+    /// unary = '!' unary | '-' primary | primary
+    fn parse_unary(&mut self) -> PResult<Expr> {
+        if self.consume(Bang) {
+            return Ok(UnaryExpr {
+                kind: UnaryExprKind::Not,
+                expr: Box::new(self.parse_unary()?),
+            });
+        }
+
+        if self.consume(Minus) {
+            return Ok(UnaryExpr {
+                kind: UnaryExprKind::Minus,
+                expr: Box::new(self.parse_primary()?),
+            });
+        }
+
+        self.parse_primary()
     }
 
     /// primary = '(' expr ')' | block_expr | integer | ident | bool

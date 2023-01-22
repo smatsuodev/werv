@@ -45,6 +45,10 @@ pub enum Expr {
         alternative: Option<Box<Expr>>,
     },
     ReturnExpr(Box<Expr>),
+    UnaryExpr {
+        kind: UnaryExprKind,
+        expr: Box<Expr>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -59,4 +63,10 @@ pub enum BinaryExprKind {
     Le,
     Gt,
     Ge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum UnaryExprKind {
+    Minus,
+    Not,
 }

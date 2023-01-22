@@ -1,5 +1,5 @@
 use super::{error::ParserError, Parser};
-use wervc_ast::{BinaryExprKind::*, Expr::*, Stmt::*};
+use wervc_ast::{BinaryExprKind::*, Expr::*, Stmt::*, UnaryExprKind};
 use wervc_lexer::token::TokenKind;
 
 fn loop_assert<T, U, const N: usize>(inputs: [T; N], expects: [U; N], f: impl Fn(&mut Parser, U))
@@ -368,5 +368,38 @@ fn parse_return_expr_test() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_return_expr().unwrap())
+    });
+}
+
+#[test]
+fn parse_unary_test() {
+    let inputs = ["!true", "-10", "!!true", "-(-10)"];
+    let expects = [
+        UnaryExpr {
+            kind: UnaryExprKind::Not,
+            expr: Box::new(Boolean(true)),
+        },
+        UnaryExpr {
+            kind: UnaryExprKind::Minus,
+            expr: Box::new(Integer(10)),
+        },
+        UnaryExpr {
+            kind: UnaryExprKind::Not,
+            expr: Box::new(UnaryExpr {
+                kind: UnaryExprKind::Not,
+                expr: Box::new(Boolean(true)),
+            }),
+        },
+        UnaryExpr {
+            kind: UnaryExprKind::Minus,
+            expr: Box::new(UnaryExpr {
+                kind: UnaryExprKind::Minus,
+                expr: Box::new(Integer(10)),
+            }),
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_unary().unwrap())
     });
 }

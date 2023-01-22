@@ -201,3 +201,14 @@ fn lexer_return_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_unary_test() {
+    let inputs = ["!5", "-15"];
+    let expects = [
+        vec![(Bang, "!"), (Number, "5"), (EOF, "\0")],
+        vec![(Minus, "-"), (Number, "15"), (EOF, "\0")],
+    ];
+
+    loop_assert(inputs, expects);
+}

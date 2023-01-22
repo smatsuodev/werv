@@ -256,3 +256,18 @@ fn eval_return_expr_test() {
 
     loop_assert_unwrap(inputs, expects);
 }
+
+#[test]
+fn eval_unary_expr_test() {
+    let inputs = ["-10", "-(-10)", "!true", "!false", "!!true", "!!false"];
+    let expects = [
+        Integer(-10),
+        Integer(10),
+        Boolean(false),
+        Boolean(true),
+        Boolean(true),
+        Boolean(false),
+    ];
+
+    loop_assert_unwrap(inputs, expects);
+}
