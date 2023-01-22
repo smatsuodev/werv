@@ -68,6 +68,9 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::FunctionDefExpr { name, params, body } => {
+                self.eval_function_def_expr(*name, params, *body)
+            }
             Expr::CallExpr { func, args } => self.eval_call_expr(*func, args),
             Expr::AssignExpr { name, value } => self.eval_assign_expr(*name, *value),
             Expr::BlockExpr(stmts) => self.eval_block_expr(stmts),
@@ -76,6 +79,25 @@ impl Evaluator {
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_function_def_expr(&mut self, name: Expr, params: Vec<Expr>, body: Expr) -> EResult {
+        if let Expr::Ident(name) = &name {
+            let params = params
+                .iter()
+                .map(|e| match e {
+                    Expr::Ident(i) => i.clone(),
+                    _ => panic!("Unexpected eval error: ident required but got {:?}", e),
+                })
+                .collect();
+            let literal = FunctionLiteral { params, body };
+
+            self.env.insert(name.clone(), literal.clone());
+
+            return Ok(literal);
+        }
+
+        panic!("Unexpected eval error: ident required but got {:?}", name)
     }
 
     fn eval_call_expr(&mut self, func: Expr, args: Vec<Expr>) -> EResult {

@@ -1,5 +1,5 @@
 use crate::{error::EvalError, EResult, Evaluator};
-use wervc_ast::Expr;
+use wervc_ast::{BinaryExprKind, Expr};
 use wervc_object::Object::{self, *};
 use wervc_parser::parser::Parser;
 
@@ -94,8 +94,39 @@ fn eval_let_expr_test() {
         "let x = 10; x",
         "let x = 10; let x = 1; x",
         "let x = 10; let _123 = x; _123",
+        "let id(x) = x",
+        "let id(x) = x; id(10)",
+        "let add(x, y) = x + y",
+        "let add(x, y) = x + y; add(10, 2)",
+        "let one() = 1",
+        "let one() = 1; one()",
     ];
-    let expects = [Unit, Integer(10), Integer(10), Integer(1), Integer(10)];
+    let expects = [
+        Unit,
+        Integer(10),
+        Integer(10),
+        Integer(1),
+        Integer(10),
+        FunctionLiteral {
+            params: vec!["x".to_string()],
+            body: Expr::Ident("x".to_string()),
+        },
+        Integer(10),
+        FunctionLiteral {
+            params: vec!["x".to_string(), "y".to_string()],
+            body: Expr::BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expr::Ident("x".to_string())),
+                rhs: Box::new(Expr::Ident("y".to_string())),
+            },
+        },
+        Integer(12),
+        FunctionLiteral {
+            params: vec![],
+            body: Expr::Integer(1),
+        },
+        Integer(1),
+    ];
 
     loop_assert_unwrap(inputs, expects);
 }

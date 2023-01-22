@@ -108,11 +108,40 @@ impl Parser {
         self.parse_assign()
     }
 
-    /// let_expr = 'let' ident '=' expr
+    /// let_expr = 'let' (ident | ident '(' ident,* ')') '=' expr
     fn parse_let_expr(&mut self) -> PResult<Expr> {
         self.expect(Let)?;
 
         let name = Box::new(self.parse_ident()?);
+
+        if self.consume(LParen) {
+            let mut params = Vec::new();
+
+            if self.consume(RParen) {
+                self.expect(Assign)?;
+
+                let body = Box::new(self.parse_expr()?);
+
+                return Ok(FunctionDefExpr { name, params, body });
+            }
+
+            let token = self.parse_ident()?;
+
+            params.push(token);
+
+            while self.consume(Comma) {
+                let token = self.parse_ident()?;
+
+                params.push(token);
+            }
+
+            self.expect(RParen)?;
+            self.expect(Assign)?;
+
+            let body = Box::new(self.parse_expr()?);
+
+            return Ok(FunctionDefExpr { name, params, body });
+        }
 
         self.expect(TokenKind::Assign)?;
 

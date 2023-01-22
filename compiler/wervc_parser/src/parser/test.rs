@@ -138,7 +138,14 @@ fn parse_binary_expr_test() {
 
 #[test]
 fn parse_let_expr() {
-    let inputs = ["let x = 1 + 2", "let foo_bar = x", "let _123 = _4567890"];
+    let inputs = [
+        "let x = 1 + 2",
+        "let foo_bar = x",
+        "let _123 = _4567890",
+        "let id(x) = x",
+        "let add(x, y) = x + y",
+        "let zero() = 0",
+    ];
     let expects = [
         LetExpr {
             name: Box::new(Ident("x".to_string())),
@@ -155,6 +162,25 @@ fn parse_let_expr() {
         LetExpr {
             name: Box::new(Ident("_123".to_string())),
             value: Box::new(Ident("_4567890".to_string())),
+        },
+        FunctionDefExpr {
+            name: Box::new(Ident("id".to_string())),
+            params: vec![Ident("x".to_string())],
+            body: Box::new(Ident("x".to_string())),
+        },
+        FunctionDefExpr {
+            name: Box::new(Ident("add".to_string())),
+            params: vec![Ident("x".to_string()), Ident("y".to_string())],
+            body: Box::new(BinaryExpr {
+                kind: Add,
+                lhs: Box::new(Ident("x".to_string())),
+                rhs: Box::new(Ident("y".to_string())),
+            }),
+        },
+        FunctionDefExpr {
+            name: Box::new(Ident("zero".to_string())),
+            params: vec![],
+            body: Box::new(Integer(0)),
         },
     ];
 

@@ -14,9 +14,7 @@ impl std::fmt::Display for Object {
             "{}",
             match self {
                 Self::Integer(i) => i.to_string(),
-                Self::FunctionLiteral { params, body } => {
-                    format!("({}) => {body}", params.join(", "))
-                }
+                Self::FunctionLiteral { .. } => "[Function]".to_string(),
                 Self::Unit => "()".to_string(),
             }
         )
