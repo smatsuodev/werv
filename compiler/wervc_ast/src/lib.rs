@@ -64,6 +64,7 @@ pub enum BinaryExprKind {
     Le,
     Gt,
     Ge,
+    Index,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

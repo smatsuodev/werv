@@ -416,3 +416,42 @@ fn parse_array_test() {
         assert_eq!(expect, parser.parse_array().unwrap())
     });
 }
+
+#[test]
+fn parse_index_test() {
+    let inputs = ["array[1]", "array[1+2]", "[1,2,3][0]", "[[1]][0][0]"];
+    let expects = [
+        BinaryExpr {
+            kind: Index,
+            lhs: Box::new(Ident("array".to_string())),
+            rhs: Box::new(Integer(1)),
+        },
+        BinaryExpr {
+            kind: Index,
+            lhs: Box::new(Ident("array".to_string())),
+            rhs: Box::new(BinaryExpr {
+                kind: Add,
+                lhs: Box::new(Integer(1)),
+                rhs: Box::new(Integer(2)),
+            }),
+        },
+        BinaryExpr {
+            kind: Index,
+            lhs: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
+            rhs: Box::new(Integer(0)),
+        },
+        BinaryExpr {
+            kind: Index,
+            lhs: Box::new(BinaryExpr {
+                kind: Index,
+                lhs: Box::new(Array(vec![Array(vec![Integer(1)])])),
+                rhs: Box::new(Integer(0)),
+            }),
+            rhs: Box::new(Integer(0)),
+        },
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_index().unwrap())
+    });
+}

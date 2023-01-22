@@ -269,27 +269,45 @@ impl Parser {
         }
     }
 
-    /// mul = call ('*' call | '/' call)*
+    /// mul = index ('*' index | '/' index)*
     fn parse_mul(&mut self) -> PResult<Expr> {
-        let mut node = self.parse_call()?;
+        let mut node = self.parse_index()?;
 
         loop {
             if self.consume(Asterisk) {
                 node = BinaryExpr {
                     kind: Mul,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_call()?),
+                    rhs: Box::new(self.parse_index()?),
                 };
             } else if self.consume(Slash) {
                 node = BinaryExpr {
                     kind: Div,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_call()?),
+                    rhs: Box::new(self.parse_index()?),
                 };
             } else {
                 return Ok(node);
             }
         }
+    }
+
+    /// index = call ('[' expr ']')*
+    fn parse_index(&mut self) -> PResult<Expr> {
+        let mut node = self.parse_call()?;
+
+        while self.consume(LBracket) {
+            let index = Box::new(self.parse_expr()?);
+
+            node = BinaryExpr {
+                kind: Index,
+                lhs: Box::new(node),
+                rhs: index,
+            };
+            self.expect(RBracket)?;
+        }
+
+        Ok(node)
     }
 
     /// call = unary ('(' expr,* ')')?

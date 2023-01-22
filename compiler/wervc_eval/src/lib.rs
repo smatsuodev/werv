@@ -309,49 +309,117 @@ impl Evaluator {
     }
 
     fn eval_binary_expr(&mut self, kind: BinaryExprKind, lhs: Expr, rhs: Expr) -> EResult {
-        let lhs_obj = self.eval_expr(lhs)?;
+        let lhs = self.eval_expr(lhs)?;
 
-        if lhs_obj.is_return() {
-            return Ok(lhs_obj);
+        if lhs.is_return() {
+            return Ok(lhs);
         }
 
-        let rhs_obj = self.eval_expr(rhs)?;
+        let rhs = self.eval_expr(rhs)?;
 
-        if rhs_obj.is_return() {
-            return Ok(rhs_obj);
+        if rhs.is_return() {
+            return Ok(rhs);
         }
 
-        if kind == BinaryExprKind::Eq {
-            return Ok(Boolean(lhs_obj == rhs_obj));
-        }
-        if kind == BinaryExprKind::Ne {
-            return Ok(Boolean(lhs_obj != rhs_obj));
-        }
+        let value = match kind {
+            BinaryExprKind::Index => {
+                if let Array(values) = lhs {
+                    if let Integer(index) = rhs {
+                        if let Ok(index) = index.try_into() {
+                            return values.into_iter().nth(index).ok_or(EvalError::OutOfRange);
+                        }
 
-        if let Integer(lhs) = lhs_obj {
-            if let Integer(rhs) = rhs_obj {
-                let value = match kind {
-                    BinaryExprKind::Add => Integer(lhs + rhs),
-                    BinaryExprKind::Sub => Integer(lhs - rhs),
-                    BinaryExprKind::Mul => Integer(lhs * rhs),
-                    BinaryExprKind::Div => Integer(lhs / rhs),
-                    BinaryExprKind::Lt => Boolean(lhs < rhs),
-                    BinaryExprKind::Le => Boolean(lhs <= rhs),
-                    BinaryExprKind::Gt => Boolean(lhs > rhs),
-                    BinaryExprKind::Ge => Boolean(lhs >= rhs),
-                    _ => panic!(
-                        "Unexpected eval error: {:?} operator has evaluated impossibly",
-                        kind
-                    ),
-                };
+                        let index: usize = index.abs().try_into().unwrap();
 
-                return Ok(value);
+                        if index > values.len() {
+                            return Err(EvalError::OutOfRange);
+                        }
+
+                        let index: usize = values.len() - index;
+
+                        return values.into_iter().nth(index).ok_or(EvalError::OutOfRange);
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
             }
+            BinaryExprKind::Eq => Boolean(lhs == rhs),
+            BinaryExprKind::Ne => Boolean(lhs != rhs),
+            BinaryExprKind::Add => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Integer(lhs + rhs));
+                    }
+                }
 
-            return Err(EvalError::UnexpectedObject(rhs_obj));
-        }
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Sub => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Integer(lhs - rhs));
+                    }
+                }
 
-        Err(EvalError::UnexpectedObject(lhs_obj))
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Mul => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Integer(lhs * rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Div => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Integer(lhs / rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Lt => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Boolean(lhs < rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Le => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Boolean(lhs <= rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Gt => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Boolean(lhs > rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+            BinaryExprKind::Ge => {
+                if let Integer(lhs) = lhs {
+                    if let Integer(rhs) = rhs {
+                        return Ok(Boolean(lhs >= rhs));
+                    }
+                }
+
+                return Err(EvalError::UnexpectedObject(rhs));
+            }
+        };
+
+        Ok(value)
     }
 
     fn eval_integer(&mut self, value: isize) -> EResult {

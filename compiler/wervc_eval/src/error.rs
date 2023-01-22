@@ -7,4 +7,5 @@ pub enum EvalError {
     UndefinedVariable(String),
     IdentRequired { got: Expr },
     UnmatchedArgsLen { expected: usize, got: usize },
+    OutOfRange,
 }
