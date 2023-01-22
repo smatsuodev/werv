@@ -5,6 +5,7 @@ pub enum Object {
     Integer(isize),
     Boolean(bool),
     Function { params: Vec<String>, body: Expr },
+    Array(Vec<Object>),
     Return(Box<Object>),
     Unit,
 }
@@ -23,6 +24,14 @@ impl std::fmt::Display for Object {
                 Self::Integer(i) => i.to_string(),
                 Self::Boolean(b) => b.to_string(),
                 Self::Function { .. } => "[Function]".to_string(),
+                Self::Array(values) => format!(
+                    "[{}]",
+                    values
+                        .iter()
+                        .map(|o| o.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                ),
                 Self::Return(o) => o.to_string(),
                 Self::Unit => "()".to_string(),
             }

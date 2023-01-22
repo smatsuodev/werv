@@ -271,3 +271,11 @@ fn eval_unary_expr_test() {
 
     loop_assert_unwrap(inputs, expects);
 }
+
+#[test]
+fn eval_array_test() {
+    let inputs = ["[1, 2, 3]"];
+    let expects = [Array(vec![Integer(1), Integer(2), Integer(3)])];
+
+    loop_assert_unwrap(inputs, expects);
+}

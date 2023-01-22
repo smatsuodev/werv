@@ -85,6 +85,7 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::Array(values) => self.eval_array(values),
             Expr::UnaryExpr { kind, expr } => self.eval_unary_expr(kind, *expr),
             Expr::ReturnExpr(e) => self.eval_return_expr(*e),
             Expr::Boolean(b) => self.eval_boolean(b),
@@ -104,6 +105,16 @@ impl Evaluator {
             Expr::BinaryExpr { kind, lhs, rhs } => self.eval_binary_expr(kind, *lhs, *rhs),
             Expr::Integer(i) => self.eval_integer(i),
         }
+    }
+
+    fn eval_array(&mut self, values: Vec<Expr>) -> EResult {
+        let mut result = Vec::new();
+
+        for value in values {
+            result.push(self.eval_expr(value)?)
+        }
+
+        Ok(Array(result))
     }
 
     fn eval_unary_expr(&mut self, kind: UnaryExprKind, expr: Expr) -> EResult {

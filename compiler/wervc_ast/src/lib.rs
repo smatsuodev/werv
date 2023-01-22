@@ -16,6 +16,7 @@ pub enum Expr {
     Integer(isize),
     Ident(String),
     Boolean(bool),
+    Array(Vec<Expr>),
     BinaryExpr {
         kind: BinaryExprKind,
         lhs: Box<Expr>,

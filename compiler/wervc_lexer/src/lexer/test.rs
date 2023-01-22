@@ -212,3 +212,24 @@ fn lexer_unary_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_array_test() {
+    let inputs = ["[1, 2 * 2, 3 + 3]"];
+    let expects = [vec![
+        (LBracket, "["),
+        (Number, "1"),
+        (Comma, ","),
+        (Number, "2"),
+        (Asterisk, "*"),
+        (Number, "2"),
+        (Comma, ","),
+        (Number, "3"),
+        (Plus, "+"),
+        (Number, "3"),
+        (RBracket, "]"),
+        (EOF, "\0"),
+    ]];
+
+    loop_assert(inputs, expects);
+}

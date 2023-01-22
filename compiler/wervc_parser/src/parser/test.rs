@@ -403,3 +403,16 @@ fn parse_unary_test() {
         assert_eq!(expect, parser.parse_unary().unwrap())
     });
 }
+
+#[test]
+fn parse_array_test() {
+    let inputs = ["[1,2,3]", "[]"];
+    let expects = [
+        Array(vec![Integer(1), Integer(2), Integer(3)]),
+        Array(vec![]),
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_array().unwrap())
+    });
+}

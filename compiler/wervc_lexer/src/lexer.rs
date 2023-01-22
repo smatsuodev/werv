@@ -102,6 +102,8 @@ impl Lexer {
             ')' => RParen,
             '{' => LBrace,
             '}' => RBrace,
+            '[' => LBracket,
+            ']' => RBracket,
             '\0' => EOF,
             c if Lexer::is_digit(c) => {
                 let literal = self.read_number();

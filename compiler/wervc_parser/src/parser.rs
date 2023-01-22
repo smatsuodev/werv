@@ -342,7 +342,7 @@ impl Parser {
         self.parse_primary()
     }
 
-    /// primary = '(' expr ')' | block_expr | integer | ident | bool
+    /// primary = '(' expr ')' | block_expr | array | integer | ident | bool
     fn parse_primary(&mut self) -> PResult<Expr> {
         if self.consume(LParen) {
             let expr = self.parse_expr()?;
@@ -354,6 +354,10 @@ impl Parser {
 
         if self.peek(LBrace) {
             return self.parse_block_expr();
+        }
+
+        if self.peek(LBracket) {
+            return self.parse_array();
         }
 
         if self.peek(Number) {
@@ -387,6 +391,27 @@ impl Parser {
         }
 
         Ok(BlockExpr(stmts))
+    }
+
+    /// array = '[' expr,* ']'
+    fn parse_array(&mut self) -> PResult<Expr> {
+        self.expect(LBracket)?;
+
+        let mut values = Vec::new();
+
+        if self.consume(RBracket) {
+            return Ok(Array(values));
+        }
+
+        values.push(self.parse_expr()?);
+
+        while self.consume(Comma) {
+            values.push(self.parse_expr()?);
+        }
+
+        self.expect(RBracket)?;
+
+        Ok(Array(values))
     }
 
     /// integer = [0-9]*
