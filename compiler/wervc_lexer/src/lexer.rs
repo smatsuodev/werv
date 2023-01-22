@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::token::{
     Token,
     TokenKind::{self, *},

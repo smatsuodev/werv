@@ -178,3 +178,26 @@ fn lexer_relation_test() {
 
     loop_assert(inputs, expects);
 }
+
+#[test]
+fn lexer_return_test() {
+    let inputs = ["return 10;", "return 10 + 20;"];
+    let expects = [
+        vec![
+            (Return, "return"),
+            (Number, "10"),
+            (SemiColon, ";"),
+            (EOF, "\0"),
+        ],
+        vec![
+            (Return, "return"),
+            (Number, "10"),
+            (Plus, "+"),
+            (Number, "20"),
+            (SemiColon, ";"),
+            (EOF, "\0"),
+        ],
+    ];
+
+    loop_assert(inputs, expects);
+}

@@ -99,7 +99,7 @@ impl Parser {
         Ok(ExprReturnStmt(expr))
     }
 
-    /// expr = let_expr | if_expr | assign
+    /// expr = let_expr | if_expr | return_expr | assign
     fn parse_expr(&mut self) -> PResult<Expr> {
         if self.peek(Let) {
             return self.parse_let_expr();
@@ -107,6 +107,10 @@ impl Parser {
 
         if self.peek(If) {
             return self.parse_if_expr();
+        }
+
+        if self.peek(Return) {
+            return self.parse_return_expr();
         }
 
         self.parse_assign()
@@ -171,6 +175,13 @@ impl Parser {
             consequence,
             alternative,
         })
+    }
+
+    /// return_expr = 'return' expr
+    fn parse_return_expr(&mut self) -> PResult<Expr> {
+        self.expect(Return)?;
+
+        Ok(ReturnExpr(Box::new(self.parse_expr()?)))
     }
 
     /// assign = add ('=' add)?

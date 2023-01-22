@@ -38,7 +38,15 @@ impl Evaluator {
 
     pub fn eval(&mut self, node: Node) -> EResult {
         match node {
-            Node::Program(stmts) => self.eval_stmts(stmts),
+            Node::Program(stmts) => {
+                let value = self.eval_stmts(stmts)?;
+
+                if let Return(value) = value {
+                    return Ok(*value);
+                }
+
+                Ok(value)
+            }
             Node::Stmt(stmt) => self.eval_stmt(stmt),
             Node::Expr(e) => self.eval_expr(e),
         }
@@ -50,6 +58,10 @@ impl Evaluator {
         for stmt in stmts {
             let value = self.eval_stmt(stmt)?;
 
+            if value.is_return() {
+                return Ok(value);
+            }
+
             result = value;
         }
 
@@ -59,7 +71,12 @@ impl Evaluator {
     fn eval_stmt(&mut self, stmt: Stmt) -> EResult {
         match stmt {
             Stmt::ExprStmt(e) => {
-                self.eval_expr(e)?;
+                let value = self.eval_expr(e)?;
+
+                if value.is_return() {
+                    return Ok(value);
+                }
+
                 Ok(Unit)
             }
             Stmt::ExprReturnStmt(e) => self.eval_expr(e),
@@ -68,6 +85,7 @@ impl Evaluator {
 
     fn eval_expr(&mut self, expr: Expr) -> EResult {
         match expr {
+            Expr::ReturnExpr(e) => self.eval_return_expr(*e),
             Expr::Boolean(b) => self.eval_boolean(b),
             Expr::IfExpr {
                 condition,
@@ -87,6 +105,10 @@ impl Evaluator {
         }
     }
 
+    fn eval_return_expr(&mut self, e: Expr) -> EResult {
+        Ok(Return(Box::new(self.eval_expr(e)?)))
+    }
+
     fn eval_boolean(&mut self, value: bool) -> EResult {
         Ok(Boolean(value))
     }
@@ -98,6 +120,10 @@ impl Evaluator {
         alternative: Option<Box<Expr>>,
     ) -> EResult {
         let condition = self.eval_expr(condition)?;
+
+        if condition.is_return() {
+            return Ok(condition);
+        }
 
         if let Boolean(true) = condition {
             return self.eval_expr(consequence);
@@ -121,7 +147,7 @@ impl Evaluator {
                     _ => panic!("Unexpected eval error: ident required but got {:?}", e),
                 })
                 .collect();
-            let literal = FunctionLiteral { params, body };
+            let literal = Function { params, body };
 
             self.env.insert(name.clone(), literal.clone());
 
@@ -136,7 +162,13 @@ impl Evaluator {
             let mut objects = Vec::new();
 
             for arg in args {
-                objects.push(self.eval_expr(arg)?);
+                let arg = self.eval_expr(arg)?;
+
+                if arg.is_return() {
+                    return Ok(arg);
+                }
+
+                objects.push(arg);
             }
 
             return Ok(call_builtin(&func, &objects).unwrap());
@@ -144,7 +176,11 @@ impl Evaluator {
 
         let func = self.eval_expr(func)?;
 
-        if let FunctionLiteral { params, body } = &func {
+        if func.is_return() {
+            return Ok(func);
+        }
+
+        if let Function { params, body } = &func {
             if args.len() != params.len() {
                 return Err(EvalError::UnmatchedArgsLen {
                     expected: params.len(),
@@ -155,16 +191,26 @@ impl Evaluator {
             let mut env = Environment::new(Some(Box::new(self.env.clone())));
 
             for (arg, param) in args.into_iter().zip(params) {
-                let value = self.eval_expr(arg)?;
+                let arg = self.eval_expr(arg)?;
 
-                env.insert(param.clone(), value);
+                if arg.is_return() {
+                    return Ok(arg);
+                }
+
+                env.insert(param.clone(), arg);
             }
 
             let mut inner = Evaluator::new();
 
             inner.set_env(env);
 
-            return inner.eval_expr(body.clone());
+            let result = inner.eval_expr(body.clone())?;
+
+            if let Return(result) = result {
+                return Ok(*result);
+            }
+
+            return Ok(result);
         }
 
         Err(EvalError::UnexpectedObject(func))
@@ -174,11 +220,19 @@ impl Evaluator {
         if let Expr::Ident(name) = &name {
             let value = self.eval_expr(value)?;
 
+            if value.is_return() {
+                return Ok(value);
+            }
+
             self.env
                 .update(name.clone(), value.clone())
                 .ok_or_else(|| EvalError::UndefinedVariable(name.clone()))?;
 
             return Ok(value);
+        }
+
+        if matches!(name, Expr::ReturnExpr(_)) {
+            return self.eval_return_expr(name);
         }
 
         Err(EvalError::IdentRequired { got: name })
@@ -203,6 +257,10 @@ impl Evaluator {
         if let Expr::Ident(name) = name {
             let value = self.eval_expr(value)?;
 
+            if value.is_return() {
+                return Ok(value);
+            }
+
             self.env.insert(name, value.clone());
 
             return Ok(value);
@@ -221,7 +279,16 @@ impl Evaluator {
 
     fn eval_binary_expr(&mut self, kind: BinaryExprKind, lhs: Expr, rhs: Expr) -> EResult {
         let lhs_obj = self.eval_expr(lhs)?;
+
+        if lhs_obj.is_return() {
+            return Ok(lhs_obj);
+        }
+
         let rhs_obj = self.eval_expr(rhs)?;
+
+        if rhs_obj.is_return() {
+            return Ok(rhs_obj);
+        }
 
         if kind == BinaryExprKind::Eq {
             return Ok(Boolean(lhs_obj == rhs_obj));

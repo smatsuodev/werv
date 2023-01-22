@@ -4,8 +4,14 @@ use wervc_ast::Expr;
 pub enum Object {
     Integer(isize),
     Boolean(bool),
-    FunctionLiteral { params: Vec<String>, body: Expr },
+    Function { params: Vec<String>, body: Expr },
+    Return(Box<Object>),
     Unit,
+}
+impl Object {
+    pub fn is_return(&self) -> bool {
+        matches!(self, Self::Return(_))
+    }
 }
 
 impl std::fmt::Display for Object {
@@ -16,7 +22,8 @@ impl std::fmt::Display for Object {
             match self {
                 Self::Integer(i) => i.to_string(),
                 Self::Boolean(b) => b.to_string(),
-                Self::FunctionLiteral { .. } => "[Function]".to_string(),
+                Self::Function { .. } => "[Function]".to_string(),
+                Self::Return(o) => o.to_string(),
                 Self::Unit => "()".to_string(),
             }
         )

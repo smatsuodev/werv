@@ -101,6 +101,25 @@ fn eval_let_expr_test() {
         "let add(x, y) = x + y; add(10, 2)",
         "let one() = 1",
         "let one() = 1; one()",
+        r"
+        let fib(n) = {
+            if n == 0 {
+                return 0;
+            };
+            if n == 1 {
+                return 1;
+            };
+
+            fib(n-1) + fib(n-2)
+        };
+
+        fib(10)
+        ",
+        r"
+        let fact(n) = if n == 0 { 1 } else { n * fact(n-1) };
+        
+        fact(10)
+        ",
     ];
     let expects = [
         Unit,
@@ -108,12 +127,12 @@ fn eval_let_expr_test() {
         Integer(10),
         Integer(1),
         Integer(10),
-        FunctionLiteral {
+        Function {
             params: vec!["x".to_string()],
             body: Expr::Ident("x".to_string()),
         },
         Integer(10),
-        FunctionLiteral {
+        Function {
             params: vec!["x".to_string(), "y".to_string()],
             body: Expr::BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -122,11 +141,13 @@ fn eval_let_expr_test() {
             },
         },
         Integer(12),
-        FunctionLiteral {
+        Function {
             params: vec![],
             body: Expr::Integer(1),
         },
         Integer(1),
+        Integer(55),
+        Integer(3628800),
     ];
 
     loop_assert_unwrap(inputs, expects);
@@ -211,6 +232,26 @@ fn eval_if_expr_test() {
         Unit,
         Integer(20),
         Unit,
+    ];
+
+    loop_assert_unwrap(inputs, expects);
+}
+
+#[test]
+fn eval_return_expr_test() {
+    let inputs = [
+        "return 10",
+        "let id(x) = { return x; }; id(10)",
+        "(return 10) + 10",
+        "if true { return 10 }; 20",
+        "return 20; return 23;",
+    ];
+    let expects = [
+        Integer(10),
+        Integer(10),
+        Integer(10),
+        Integer(10),
+        Integer(20),
     ];
 
     loop_assert_unwrap(inputs, expects);

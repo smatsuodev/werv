@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Node {
     Program(Vec<Stmt>),
@@ -46,6 +44,7 @@ pub enum Expr {
         consequence: Box<Expr>,
         alternative: Option<Box<Expr>>,
     },
+    ReturnExpr(Box<Expr>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

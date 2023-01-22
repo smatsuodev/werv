@@ -53,6 +53,7 @@ pub enum TokenKind {
     Else,
     True,
     False,
+    Return,
 }
 
 impl Default for TokenKind {
@@ -69,6 +70,7 @@ impl TokenKind {
             "else" => Self::Else,
             "true" => Self::True,
             "false" => Self::False,
+            "return" => Self::Return,
             _ => Self::Ident,
         }
     }

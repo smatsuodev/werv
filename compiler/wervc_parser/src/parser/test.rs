@@ -196,6 +196,7 @@ fn parse_block_expr() {
         "{ let x = 10; x }",
         "{ let x = 10; }",
         "{ let x = { 10 } }",
+        "{ return 10; }",
     ];
     let expects = [
         BlockExpr(vec![ExprReturnStmt(Integer(10))]),
@@ -214,6 +215,7 @@ fn parse_block_expr() {
             name: Box::new(Ident("x".to_string())),
             value: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
         })]),
+        BlockExpr(vec![ExprStmt(ReturnExpr(Box::new(Integer(10))))]),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -353,5 +355,18 @@ fn parse_bool_test() {
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_bool().unwrap())
+    });
+}
+
+#[test]
+fn parse_return_expr_test() {
+    let inputs = ["return 10", "return true"];
+    let expects = [
+        ReturnExpr(Box::new(Integer(10))),
+        ReturnExpr(Box::new(Boolean(true))),
+    ];
+
+    loop_assert(inputs, expects, |parser, expect| {
+        assert_eq!(expect, parser.parse_return_expr().unwrap())
     });
 }
