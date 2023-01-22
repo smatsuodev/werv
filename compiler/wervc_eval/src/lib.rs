@@ -170,7 +170,7 @@ impl Evaluator {
     }
 
     fn eval_function_def_expr(&mut self, name: Expr, params: Vec<Expr>, body: Expr) -> EResult {
-        if let Expr::Ident(name) = &name {
+        if let Expr::Ident(name) = name {
             let params = params
                 .iter()
                 .map(|e| match e {
@@ -180,7 +180,7 @@ impl Evaluator {
                 .collect();
             let literal = Function { params, body };
 
-            self.env.insert(name.clone(), literal.clone());
+            self.env.insert(name, literal.clone());
 
             return Ok(literal);
         }
@@ -248,7 +248,7 @@ impl Evaluator {
     }
 
     fn eval_assign_expr(&mut self, name: Expr, value: Expr) -> EResult {
-        if let Expr::Ident(name) = &name {
+        if let Expr::Ident(name) = name {
             let value = self.eval_expr(value)?;
 
             if value.is_return() {
