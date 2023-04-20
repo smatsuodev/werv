@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "compiler/wervc_eval"
+		},
+		{
+			"path": "compiler/wervc_parser"
+		},
+		{
+			"path": "repl"
+		},
+		{
+			"path": "compiler/wervc_lexer"
+		},
+		{
+			"path": "compiler/wervc_ast"
+		},
+		{
+			"path": "compiler/wervc_object"
+		}
+	],
+	"settings": {}
+}

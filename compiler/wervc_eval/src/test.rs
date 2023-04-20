@@ -173,8 +173,9 @@ fn eval_assign_expr_test() {
         "let x = 10; x = 20; x",
         "let x = 10; { x = 20; x }",
         "let x = 10; { x = 20; }; x",
+        "let x = 10; { let x = 20; }; x",
     ];
-    let expects = [Integer(20), Integer(20), Integer(20)];
+    let expects = [Integer(20), Integer(20), Integer(20), Integer(10)];
 
     loop_assert_unwrap(inputs, expects);
 }
