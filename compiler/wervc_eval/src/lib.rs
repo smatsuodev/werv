@@ -131,6 +131,7 @@ impl Evaluator {
                     return Ok(Boolean(!value));
                 }
             }
+            UnaryExprKind::Deref => {}
         }
 
         Err(EvalError::UnexpectedObject(value))

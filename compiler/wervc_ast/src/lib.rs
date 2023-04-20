@@ -71,4 +71,6 @@ pub enum BinaryExprKind {
 pub enum UnaryExprKind {
     Minus,
     Not,
+    Deref,
+    Ref,
 }

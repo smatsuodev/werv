@@ -32,6 +32,7 @@ pub enum TokenKind {
     Asterisk,
     Slash,
     Bang,
+    Ampersand,
 
     Eq,
     Ne,

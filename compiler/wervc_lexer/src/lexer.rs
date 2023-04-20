@@ -96,6 +96,7 @@ impl Lexer {
             '-' => Minus,
             '*' => Asterisk,
             '/' => Slash,
+            '&' => Ampersand,
             ';' => SemiColon,
             ',' => Comma,
             '(' => LParen,

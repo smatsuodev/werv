@@ -1,3 +1,5 @@
+use std::{borrow::BorrowMut, ops::DerefMut};
+
 use wervc_ast::Expr;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -7,6 +9,7 @@ pub enum Object {
     Function { params: Vec<String>, body: Expr },
     Array(Vec<Object>),
     Return(Box<Object>),
+    Pointer(Box<Object>),
     Unit,
 }
 impl Object {
@@ -33,6 +36,7 @@ impl std::fmt::Display for Object {
                         .join(", ")
                 ),
                 Self::Return(o) => o.to_string(),
+                Self::Pointer(p) => p.to_string(),
                 Self::Unit => "()".to_string(),
             }
         )
