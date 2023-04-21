@@ -131,7 +131,14 @@ impl Evaluator {
                     return Ok(Boolean(!value));
                 }
             }
-            UnaryExprKind::Deref => {}
+            UnaryExprKind::Deref => {
+                if let Pointer(value) = value {
+                    return Ok(*value);
+                }
+            }
+            UnaryExprKind::Ref => {
+                return Ok(Pointer(Box::new(value)));
+            }
         }
 
         Err(EvalError::UnexpectedObject(value))

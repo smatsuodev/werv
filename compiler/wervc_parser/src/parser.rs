@@ -341,11 +341,25 @@ impl Parser {
         Ok(node)
     }
 
-    /// unary = '!' unary | '-' primary | primary
+    /// unary = '!' unary | '*' unary | '&' unary | '-' primary | primary
     fn parse_unary(&mut self) -> PResult<Expr> {
         if self.consume(Bang) {
             return Ok(UnaryExpr {
                 kind: UnaryExprKind::Not,
+                expr: Box::new(self.parse_unary()?),
+            });
+        }
+
+        if self.consume(Asterisk) {
+            return Ok(UnaryExpr {
+                kind: UnaryExprKind::Deref,
+                expr: Box::new(self.parse_unary()?),
+            });
+        }
+
+        if self.consume(Ampersand) {
+            return Ok(UnaryExpr {
+                kind: UnaryExprKind::Ref,
                 expr: Box::new(self.parse_unary()?),
             });
         }

@@ -36,7 +36,7 @@ impl std::fmt::Display for Object {
                         .join(", ")
                 ),
                 Self::Return(o) => o.to_string(),
-                Self::Pointer(p) => p.to_string(),
+                Self::Pointer(p) => format!("{:p}", p),
                 Self::Unit => "()".to_string(),
             }
         )
