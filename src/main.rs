@@ -23,7 +23,7 @@ fn main() {
 }
 
 fn run(args: &mut std::env::Args) {
-    if let Some(path) = args.nth(2) {
+    if let Some(path) = args.next() {
         let mut file = std::fs::File::open(path).unwrap();
         let mut input = String::new();
 
