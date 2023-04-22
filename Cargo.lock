@@ -21,9 +21,8 @@ dependencies = [
 name = "wervc"
 version = "0.1.0"
 dependencies = [
- "wervc_eval",
- "wervc_object",
- "wervc_parser",
+ "wervc_compiler",
+ "wervc_interpreter",
 ]
 
 [[package]]
@@ -31,10 +30,27 @@ name = "wervc_ast"
 version = "0.1.0"
 
 [[package]]
+name = "wervc_compiler"
+version = "0.1.0"
+dependencies = [
+ "wervc_ast",
+ "wervc_parser",
+]
+
+[[package]]
 name = "wervc_eval"
 version = "0.1.0"
 dependencies = [
  "wervc_ast",
+ "wervc_object",
+ "wervc_parser",
+]
+
+[[package]]
+name = "wervc_interpreter"
+version = "0.1.0"
+dependencies = [
+ "wervc_eval",
  "wervc_object",
  "wervc_parser",
 ]
