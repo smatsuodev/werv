@@ -3,7 +3,9 @@ pub mod error;
 use std::fmt::Display;
 
 use error::CompileError;
-use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program, UnaryExpr};
+use wervc_ast::{
+    BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program, ReturnExpr, UnaryExpr,
+};
 use wervc_parser::parser::Parser;
 
 type CResult = Result<(), CompileError>;
@@ -141,6 +143,7 @@ impl Compiler {
             Expression::BinaryExpr(e) => self.gen_binary_expr(e),
             Expression::UnaryExpr(e) => self.gen_unary_expr(e),
             Expression::Ident(_) => self.gen_ident(e),
+            Expression::ReturnExpr(e) => self.gen_return_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -263,6 +266,16 @@ impl Compiler {
         self.push("rbp");
         self.mov("rbp", "rsp");
         self.sub("rsp", total_offset);
+    }
+
+    fn gen_return_expr(&mut self, e: &ReturnExpr) -> CResult {
+        self.gen_expr(&e.value)?;
+        self.pop("rax");
+        self.mov("rsp", "rbp");
+        self.pop("rbp");
+        self.ret();
+
+        Ok(())
     }
 }
 
