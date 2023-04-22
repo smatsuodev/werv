@@ -2,7 +2,7 @@ use wervc_ast::{Expression, Ident};
 use wervc_object::Object;
 
 pub fn is_builtin(name: &Expression) -> bool {
-    if let Expression::Ident(Ident { name }) = name {
+    if let Expression::Ident(Ident { name, .. }) = name {
         return matches!(name.as_str(), "print" | "println");
     }
 
@@ -10,7 +10,7 @@ pub fn is_builtin(name: &Expression) -> bool {
 }
 
 pub fn call_builtin(name: &Expression, args: &[Object]) -> Option<Object> {
-    if let Expression::Ident(Ident { name }) = name {
+    if let Expression::Ident(Ident { name, .. }) = name {
         return match name.as_str() {
             "print" => Some(builtin_print(args)),
             "println" => Some(builtin_println(args)),

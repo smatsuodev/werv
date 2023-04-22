@@ -36,6 +36,10 @@ impl Compiler {
         self.add_code(format!("  {} {}, {}", operation, lhs, rhs));
     }
 
+    fn mov(&mut self, lhs: impl Display, rhs: impl Display) {
+        self.binary_op("mov", lhs, rhs);
+    }
+
     fn push(&mut self, code: impl Display) {
         self.unary_op("push", code);
     }
@@ -88,34 +92,45 @@ impl Compiler {
             }
         };
 
-        self.gen_preload();
         self.gen_program(&program)?;
-
-        self.pop("rax");
-        self.ret();
 
         Ok(())
     }
 
-    fn gen_preload(&mut self) {
+    fn gen_prelude(&mut self) {
         self.add_code(".intel_syntax noprefix");
         self.add_code(".globl main");
         self.add_code("main:");
     }
 
     fn gen_program(&mut self, program: &Program) -> CResult {
-        let Program { statements } = program;
+        let Program {
+            statements,
+            total_offset,
+        } = program;
+
+        self.gen_prelude();
+        self.gen_prologue(*total_offset);
 
         for statement in statements {
             match statement {
                 wervc_ast::Statement::ExprStmt(e) => {
-                    return Err(CompileError::Unimplemented);
+                    self.gen_expr(e)?;
+                    self.pop("rax");
+                    self.mov("rax", 0);
+                    self.push("rax");
                 }
                 wervc_ast::Statement::ExprReturnStmt(e) => {
                     self.gen_expr(e)?;
                 }
             }
+
+            self.pop("rax");
         }
+
+        self.mov("rsp", "rbp");
+        self.pop("rbp");
+        self.ret();
 
         Ok(())
     }
@@ -125,6 +140,7 @@ impl Compiler {
             Expression::Integer(e) => self.gen_integer(e),
             Expression::BinaryExpr(e) => self.gen_binary_expr(e),
             Expression::UnaryExpr(e) => self.gen_unary_expr(e),
+            Expression::Ident(_) => self.gen_ident(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -184,8 +200,14 @@ impl Compiler {
                 self.unary_op("setl", "al");
                 self.movzb("rax", "al");
             }
-            _ => {
-                return Err(CompileError::Unimplemented);
+            BinaryExprKind::Assign => {
+                self.gen_left_val(&e.lhs)?;
+                self.gen_expr(&e.rhs)?;
+
+                self.pop("rdi");
+                self.pop("rax");
+                self.mov("[rax]", "rdi");
+                self.push("rdi");
             }
         }
 
@@ -211,6 +233,36 @@ impl Compiler {
         self.push("rax");
 
         Ok(())
+    }
+
+    fn gen_left_val(&mut self, e: &Expression) -> CResult {
+        match e {
+            Expression::Ident(e) => {
+                self.mov("rax", "rbp");
+                self.sub("rax", e.offset);
+                self.push("rax");
+            }
+            _ => {
+                return Err(CompileError::NotLeftValue);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn gen_ident(&mut self, e: &Expression) -> CResult {
+        self.gen_left_val(e)?;
+        self.pop("rax");
+        self.mov("rax", "[rax]");
+        self.push("rax");
+
+        Ok(())
+    }
+
+    fn gen_prologue(&mut self, total_offset: isize) {
+        self.push("rbp");
+        self.mov("rbp", "rsp");
+        self.sub("rsp", total_offset);
     }
 }
 

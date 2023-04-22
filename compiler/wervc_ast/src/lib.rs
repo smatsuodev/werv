@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
+    pub total_offset: isize,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -24,6 +25,7 @@ pub struct Integer {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
     pub name: String,
+    pub offset: isize,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

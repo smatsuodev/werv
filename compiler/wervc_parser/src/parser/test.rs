@@ -55,6 +55,7 @@ fn parse_stmt_test() {
         Statement::ExprStmt(Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -65,6 +66,7 @@ fn parse_stmt_test() {
         Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -86,6 +88,7 @@ fn parse_stmt_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -97,6 +100,7 @@ fn parse_stmt_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -149,9 +153,11 @@ fn parse_binary_expr_test() {
             kind: BinaryExprKind::Add,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::Ident(Ident {
                 name: "y".to_string(),
+                offset: 16,
             })),
         }),
     ];
@@ -175,6 +181,7 @@ fn parse_let_expr() {
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -185,57 +192,68 @@ fn parse_let_expr() {
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "foo_bar".to_string(),
+                offset: 8,
             })),
             value: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 16,
             })),
         }),
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "_123".to_string(),
+                offset: 8,
             })),
             value: Box::new(Expression::Ident(Ident {
                 name: "_4567890".to_string(),
+                offset: 16,
             })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "id".to_string(),
+                offset: 8,
             })),
-
             params: vec![Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 16,
             })],
             body: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 16,
             })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "add".to_string(),
+                offset: 8,
             })),
-
             params: vec![
                 Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 16,
                 }),
                 Expression::Ident(Ident {
                     name: "y".to_string(),
+                    offset: 24,
                 }),
             ],
             body: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 16,
                 })),
                 rhs: Box::new(Expression::Ident(Ident {
                     name: "y".to_string(),
+                    offset: 24,
                 })),
             })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "zero".to_string(),
+                offset: 8,
             })),
 
             params: vec![],
@@ -268,11 +286,13 @@ fn parse_block_expr() {
                 Statement::ExprStmt(Expression::LetExpr(LetExpr {
                     name: Box::new(Expression::Ident(Ident {
                         name: "x".to_string(),
+                        offset: 8,
                     })),
                     value: Box::new(Expression::Integer(Integer { value: 10 })),
                 })),
                 Statement::ExprReturnStmt(Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 8,
                 })),
             ],
         }),
@@ -280,6 +300,7 @@ fn parse_block_expr() {
             statements: vec![Statement::ExprStmt(Expression::LetExpr(LetExpr {
                 name: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 8,
                 })),
                 value: Box::new(Expression::Integer(Integer { value: 10 })),
             }))],
@@ -288,6 +309,7 @@ fn parse_block_expr() {
             statements: vec![Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
                 name: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 8,
                 })),
                 value: Box::new(Expression::BlockExpr(BlockExpr {
                     statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
@@ -316,6 +338,7 @@ fn parse_assign_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -327,15 +350,18 @@ fn parse_assign_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::Ident(Ident {
                 name: "y".to_string(),
+                offset: 16,
             })),
         }),
         Expression::BinaryExpr(BinaryExpr {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
             rhs: Box::new(Expression::BlockExpr(BlockExpr {
                 statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
@@ -357,12 +383,14 @@ fn parse_call_test() {
         Expression::CallExpr(CallExpr {
             func: Box::new(Expression::Ident(Ident {
                 name: "foo".to_string(),
+                offset: 8,
             })),
             args: vec![],
         }),
         Expression::CallExpr(CallExpr {
             func: Box::new(Expression::Ident(Ident {
                 name: "foo".to_string(),
+                offset: 8,
             })),
             args: vec![
                 Expression::Integer(Integer { value: 1 }),
@@ -530,12 +558,14 @@ fn parse_unary_test() {
             kind: UnaryExprKind::Ref,
             expr: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 8,
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Deref,
             expr: Box::new(Expression::Ident(Ident {
                 name: "p".to_string(),
+                offset: 8,
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
@@ -544,6 +574,7 @@ fn parse_unary_test() {
                 kind: UnaryExprKind::Ref,
                 expr: Box::new(Expression::Ident(Ident {
                     name: "p".to_string(),
+                    offset: 8,
                 })),
             })),
         }),
@@ -561,6 +592,7 @@ fn parse_unary_test() {
                                 kind: UnaryExprKind::Deref,
                                 expr: Box::new(Expression::Ident(Ident {
                                     name: "p".to_string(),
+                                    offset: 8,
                                 })),
                             })),
                         })),
@@ -582,6 +614,7 @@ fn parse_unary_test() {
                                 kind: UnaryExprKind::Ref,
                                 expr: Box::new(Expression::Ident(Ident {
                                     name: "p".to_string(),
+                                    offset: 8,
                                 })),
                             })),
                         })),
@@ -622,12 +655,14 @@ fn parse_index_test() {
         Expression::IndexExpr(IndexExpr {
             array: Box::new(Expression::Ident(Ident {
                 name: "array".to_string(),
+                offset: 8,
             })),
             index: Box::new(Expression::Integer(Integer { value: 1 })),
         }),
         Expression::IndexExpr(IndexExpr {
             array: Box::new(Expression::Ident(Ident {
                 name: "array".to_string(),
+                offset: 8,
             })),
             index: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,

@@ -2,6 +2,8 @@ pub mod error;
 #[cfg(test)]
 mod test;
 
+use std::collections::HashMap;
+
 use self::error::ParserError;
 use wervc_ast::{
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
@@ -21,6 +23,8 @@ use wervc_lexer::{
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
+    local_vars: HashMap<String, Ident>,
+    cur_offset: isize,
 }
 
 type PResult<T> = Result<T, ParserError>;
@@ -31,6 +35,8 @@ impl Parser {
         let mut parser = Parser {
             lexer,
             cur_token: Token::default(),
+            local_vars: HashMap::new(),
+            cur_offset: 0,
         };
 
         parser.next_token();
@@ -86,7 +92,10 @@ impl Parser {
             statements.push(stmt);
         }
 
-        Ok(Node::Program(Program { statements }))
+        Ok(Node::Program(Program {
+            statements,
+            total_offset: self.cur_offset,
+        }))
     }
 
     /// stmt = expr ';'?
@@ -471,9 +480,21 @@ impl Parser {
     /// ident = ([a-zA-Z] | '_') ([a-zA-Z0-9] | '_')*
     fn parse_ident(&mut self) -> PResult<Expression> {
         let token = self.expect(TokenKind::Ident)?;
-        let literal = token.literal;
+        let name = token.literal;
 
-        Ok(Expression::Ident(Ident { name: literal }))
+        if let Some(ident) = self.local_vars.get(&name) {
+            return Ok(Expression::Ident(ident.clone()));
+        }
+
+        let ident = Ident {
+            name,
+            offset: self.cur_offset + 8,
+        };
+
+        self.local_vars.insert(ident.name.clone(), ident.clone());
+        self.cur_offset = ident.offset;
+
+        Ok(Expression::Ident(ident))
     }
 
     /// bool = 'true' | 'false'

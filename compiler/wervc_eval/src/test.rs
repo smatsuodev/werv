@@ -131,6 +131,7 @@ fn eval_let_expr_test() {
             params: vec!["x".to_string()],
             body: Expression::Ident(Ident {
                 name: "x".to_string(),
+                offset: 16,
             }),
         },
         Integer(10),
@@ -140,9 +141,11 @@ fn eval_let_expr_test() {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
+                    offset: 16,
                 })),
                 rhs: Box::new(Expression::Ident(Ident {
                     name: "y".to_string(),
+                    offset: 24,
                 })),
             }),
         },
