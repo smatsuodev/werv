@@ -3,7 +3,7 @@ pub mod error;
 use std::fmt::{format, Display};
 
 use error::CompileError;
-use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program};
+use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program, UnaryExpr};
 use wervc_parser::parser::Parser;
 
 type CResult = Result<(), CompileError>;
@@ -53,6 +53,10 @@ impl Compiler {
         self.add_code(format!("  idiv {}", value));
     }
 
+    fn neg(&mut self, value: impl Display) {
+        self.add_code(format!("  neg {}", value));
+    }
+
     pub fn compile(&mut self, program: impl ToString) -> CResult {
         let program = Parser::new(program)
             .parse_program()
@@ -100,6 +104,7 @@ impl Compiler {
         match e {
             Expression::Integer(e) => self.gen_integer(e),
             Expression::BinaryExpr(e) => self.gen_binary_expr(e),
+            Expression::UnaryExpr(e) => self.gen_unary_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -128,6 +133,25 @@ impl Compiler {
             }
             BinaryExprKind::Div => {
                 self.idiv("rdi");
+            }
+            _ => {
+                return Err(CompileError::Unimplemented);
+            }
+        }
+
+        self.push("rax");
+
+        Ok(())
+    }
+
+    fn gen_unary_expr(&mut self, e: &UnaryExpr) -> CResult {
+        self.gen_expr(&e.expr)?;
+
+        self.pop("rax");
+
+        match e.kind {
+            wervc_ast::UnaryExprKind::Minus => {
+                self.neg("rax");
             }
             _ => {
                 return Err(CompileError::Unimplemented);
