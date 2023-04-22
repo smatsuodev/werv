@@ -49,49 +49,42 @@ impl Lexer {
     pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
 
-        let ch = self.ch;
-        let mut literal = ch.to_string();
-        let kind = match ch {
-            '=' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    literal = format!("{ch}=");
+        let kind = match self.ch {
+            _ if self.is_number() => {
+                let literal = self.read_number();
 
-                    Eq
-                } else {
-                    Assign
-                }
+                return Token::new(Number, literal);
             }
-            '<' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    literal = format!("{ch}=");
+            _ if self.is_ident() => {
+                let literal = self.read_ident();
+                let kind = TokenKind::lookup_ident(&literal);
 
-                    Le
-                } else {
-                    Lt
-                }
+                return Token::new(kind, literal);
             }
-            '>' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    literal = format!("{ch}=");
-
-                    Ge
-                } else {
-                    Gt
-                }
+            '=' if self.peek_char() == '=' => {
+                self.read_char();
+                self.read_char();
+                return Token::new(Eq, "==");
             }
-            '!' => {
-                if self.peek_char() == '=' {
-                    self.read_char();
-                    literal = format!("{ch}=");
-
-                    Ne
-                } else {
-                    Bang
-                }
+            '=' => Assign,
+            '<' if self.peek_char() == '=' => {
+                self.read_char();
+                self.read_char();
+                return Token::new(Le, "<=");
             }
+            '<' => Lt,
+            '>' if self.peek_char() == '=' => {
+                self.read_char();
+                self.read_char();
+                return Token::new(Ge, ">=");
+            }
+            '>' => Gt,
+            '!' if self.peek_char() == '=' => {
+                self.read_char();
+                self.read_char();
+                return Token::new(Ne, "!=");
+            }
+            '!' => Bang,
             '+' => Plus,
             '-' => Minus,
             '*' => Asterisk,
@@ -106,23 +99,13 @@ impl Lexer {
             '[' => LBracket,
             ']' => RBracket,
             '\0' => EOF,
-            c if Lexer::is_digit(c) => {
-                let literal = self.read_number();
-
-                return Token::new(Number, literal);
-            }
-            c if Lexer::is_ident_char(c) => {
-                let literal = self.read_ident();
-                let kind = TokenKind::lookup_ident(&literal);
-
-                return Token::new(kind, literal);
-            }
             _ => Unknown,
         };
+        let ch = self.ch;
 
         self.read_char();
 
-        Token::new(kind, literal)
+        Token::new(kind, ch)
     }
 
     fn eat_whitespace(&mut self) {
@@ -138,28 +121,28 @@ impl Lexer {
     fn read_number(&mut self) -> String {
         let position = self.position;
 
-        while Lexer::is_digit(self.ch) {
+        while self.is_number() {
             self.read_char();
         }
 
         self.input[position..self.position].to_string()
     }
 
-    fn is_digit(ch: char) -> bool {
-        ch.is_ascii_digit()
+    fn is_number(&self) -> bool {
+        self.ch.is_ascii_digit()
     }
 
     fn read_ident(&mut self) -> String {
         let position = self.position;
 
-        while Lexer::is_ident_char(self.ch) || Lexer::is_digit(self.ch) {
+        while self.is_number() || self.is_ident() {
             self.read_char();
         }
 
         self.input[position..self.position].to_string()
     }
 
-    fn is_ident_char(ch: char) -> bool {
-        ch.is_ascii_alphabetic() || ch == '_'
+    fn is_ident(&self) -> bool {
+        self.ch.is_ascii_alphabetic() || self.ch == '_'
     }
 }

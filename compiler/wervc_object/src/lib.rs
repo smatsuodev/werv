@@ -1,10 +1,13 @@
-use wervc_ast::Expr;
+use wervc_ast::Expression;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
     Integer(isize),
     Boolean(bool),
-    Function { params: Vec<String>, body: Expr },
+    Function {
+        params: Vec<String>,
+        body: Expression,
+    },
     Array(Vec<Object>),
     Return(Box<Object>),
     Pointer(Box<Object>),
