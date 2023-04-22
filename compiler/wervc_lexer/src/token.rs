@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct Token {
-    kind: TokenKind,
-    literal: String,
+    pub kind: TokenKind,
+    pub literal: String,
 }
 impl Token {
     pub fn new(kind: TokenKind, literal: impl ToString) -> Token {
@@ -9,12 +9,6 @@ impl Token {
             kind,
             literal: literal.to_string(),
         }
-    }
-    pub fn kind(&self) -> TokenKind {
-        self.kind
-    }
-    pub fn literal(&self) -> &str {
-        &self.literal
     }
 }
 
