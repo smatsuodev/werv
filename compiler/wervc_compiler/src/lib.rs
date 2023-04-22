@@ -1,6 +1,6 @@
 pub mod error;
 
-use std::fmt::{format, Display};
+use std::fmt::Display;
 
 use error::CompileError;
 use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program, UnaryExpr};
@@ -24,37 +24,57 @@ impl Compiler {
         self.output.push('\n');
     }
 
+    fn nullary(&mut self, operation: impl Display) {
+        self.add_code(format!("  {}", operation));
+    }
+
+    fn unary_op(&mut self, operation: impl Display, operand: impl Display) {
+        self.add_code(format!("  {} {}", operation, operand));
+    }
+
+    fn binary_op(&mut self, operation: impl Display, lhs: impl Display, rhs: impl Display) {
+        self.add_code(format!("  {} {}, {}", operation, lhs, rhs));
+    }
+
     fn push(&mut self, code: impl Display) {
-        self.add_code(format!("  push {}", code));
+        self.unary_op("push", code);
     }
 
     fn ret(&mut self) {
-        self.add_code("  ret");
+        self.nullary("ret");
     }
 
     fn pop(&mut self, code: impl Display) {
-        self.add_code(format!("  pop {}", code));
+        self.unary_op("pop", code);
     }
 
     fn add(&mut self, lhs: impl Display, rhs: impl Display) {
-        self.add_code(format!("  add {}, {}", lhs, rhs));
+        self.binary_op("add", lhs, rhs);
     }
 
     fn sub(&mut self, lhs: impl Display, rhs: impl Display) {
-        self.add_code(format!("  sub {}, {}", lhs, rhs));
+        self.binary_op("sub", lhs, rhs);
     }
 
     fn imul(&mut self, lhs: impl Display, rhs: impl Display) {
-        self.add_code(format!("  imul {}, {}", lhs, rhs));
+        self.binary_op("imul", lhs, rhs);
     }
 
     fn idiv(&mut self, value: impl Display) {
-        self.add_code("  cqo");
-        self.add_code(format!("  idiv {}", value));
+        self.nullary("cqo");
+        self.unary_op("idiv", value);
     }
 
     fn neg(&mut self, value: impl Display) {
-        self.add_code(format!("  neg {}", value));
+        self.unary_op("neg", value);
+    }
+
+    fn cmp(&mut self, lhs: impl Display, rhs: impl Display) {
+        self.binary_op("cmp", lhs, rhs);
+    }
+
+    fn movzb(&mut self, lhs: impl Display, rhs: impl Display) {
+        self.add_code(format!("  movzb {}, {}", lhs, rhs));
     }
 
     pub fn compile(&mut self, program: impl ToString) -> CResult {
@@ -133,6 +153,36 @@ impl Compiler {
             }
             BinaryExprKind::Div => {
                 self.idiv("rdi");
+            }
+            BinaryExprKind::Eq => {
+                self.cmp("rax", "rdi");
+                self.unary_op("sete", "al");
+                self.movzb("rax", "al");
+            }
+            BinaryExprKind::Ne => {
+                self.cmp("rax", "rdi");
+                self.unary_op("setne", "al");
+                self.movzb("rax", "al");
+            }
+            BinaryExprKind::Ge => {
+                self.cmp("rax", "rdi");
+                self.unary_op("setge", "al");
+                self.movzb("rax", "al");
+            }
+            BinaryExprKind::Gt => {
+                self.cmp("rax", "rdi");
+                self.unary_op("setg", "al");
+                self.movzb("rax", "al");
+            }
+            BinaryExprKind::Le => {
+                self.cmp("rax", "rdi");
+                self.unary_op("setle", "al");
+                self.movzb("rax", "al");
+            }
+            BinaryExprKind::Lt => {
+                self.cmp("rax", "rdi");
+                self.unary_op("setl", "al");
+                self.movzb("rax", "al");
             }
             _ => {
                 return Err(CompileError::Unimplemented);
