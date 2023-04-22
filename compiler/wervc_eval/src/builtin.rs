@@ -1,16 +1,16 @@
-use wervc_ast::Expr;
+use wervc_ast::{Expression, Ident};
 use wervc_object::Object;
 
-pub fn is_builtin(name: &Expr) -> bool {
-    if let Expr::Ident(name) = name {
+pub fn is_builtin(name: &Expression) -> bool {
+    if let Expression::Ident(Ident { name }) = name {
         return matches!(name.as_str(), "print" | "println");
     }
 
     false
 }
 
-pub fn call_builtin(name: &Expr, args: &[Object]) -> Option<Object> {
-    if let Expr::Ident(name) = name {
+pub fn call_builtin(name: &Expression, args: &[Object]) -> Option<Object> {
+    if let Expression::Ident(Ident { name }) = name {
         return match name.as_str() {
             "print" => Some(builtin_print(args)),
             "println" => Some(builtin_println(args)),

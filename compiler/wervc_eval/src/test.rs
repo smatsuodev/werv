@@ -1,5 +1,5 @@
 use crate::{error::EvalError, EResult, Evaluator};
-use wervc_ast::{BinaryExprKind, Expr};
+use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Ident, Integer};
 use wervc_object::Object::{self, *};
 use wervc_parser::parser::Parser;
 
@@ -37,7 +37,7 @@ fn eval_error_test() {
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::IdentRequired {
-            got: Expr::Integer(10),
+            actual: Expression::Integer(Integer { value: 10 }),
         }),
         Err(EvalError::UnexpectedObject(Integer(1))),
     ];
@@ -129,21 +129,27 @@ fn eval_let_expr_test() {
         Integer(10),
         Function {
             params: vec!["x".to_string()],
-            body: Expr::Ident("x".to_string()),
+            body: Expression::Ident(Ident {
+                name: "x".to_string(),
+            }),
         },
         Integer(10),
         Function {
             params: vec!["x".to_string(), "y".to_string()],
-            body: Expr::BinaryExpr {
+            body: Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
-                lhs: Box::new(Expr::Ident("x".to_string())),
-                rhs: Box::new(Expr::Ident("y".to_string())),
-            },
+                lhs: Box::new(Expression::Ident(Ident {
+                    name: "x".to_string(),
+                })),
+                rhs: Box::new(Expression::Ident(Ident {
+                    name: "y".to_string(),
+                })),
+            }),
         },
         Integer(12),
         Function {
             params: vec![],
-            body: Expr::Integer(1),
+            body: Expression::Integer(Integer { value: 1 }),
         },
         Integer(1),
         Integer(55),

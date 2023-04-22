@@ -4,11 +4,11 @@ mod test;
 
 use self::error::ParserError;
 use wervc_ast::{
-    BinaryExprKind::{self, *},
-    Expr::{self, *},
-    Node,
-    Stmt::{self, *},
-    UnaryExprKind,
+    Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
+    Expression::{self},
+    FunctionDefExpr, Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr,
+    Statement::{self},
+    UnaryExpr, UnaryExprKind,
 };
 use wervc_lexer::{
     lexer::Lexer,
@@ -43,11 +43,11 @@ impl Parser {
     }
 
     fn peek(&self, kind: TokenKind) -> bool {
-        self.cur_token.kind() == kind
+        self.cur_token.kind == kind
     }
 
     fn consume(&mut self, kind: TokenKind) -> bool {
-        if self.cur_token.kind() == kind {
+        if self.cur_token.kind == kind {
             self.next_token();
             return true;
         }
@@ -56,10 +56,10 @@ impl Parser {
     }
 
     fn expect(&mut self, kind: TokenKind) -> PResult<Token> {
-        if self.cur_token.kind() != kind {
+        if self.cur_token.kind != kind {
             return Err(ParserError::UnexpectedToken {
                 expected: kind,
-                got: self.cur_token.kind(),
+                actual: self.cur_token.kind,
             });
         }
 
@@ -72,7 +72,7 @@ impl Parser {
 
     /// program = stmt*
     pub fn parse_program(&mut self) -> PResult<Node> {
-        let mut stmts = Vec::new();
+        let mut statements = Vec::new();
         let mut is_returned = false;
 
         while !self.consume(EOF) {
@@ -82,26 +82,26 @@ impl Parser {
                 return Err(ParserError::RequiredSemiColon);
             }
 
-            is_returned = matches!(stmt, ExprReturnStmt(_));
-            stmts.push(stmt);
+            is_returned = matches!(stmt, Statement::ExprReturnStmt(_));
+            statements.push(stmt);
         }
 
-        Ok(Node::Program(stmts))
+        Ok(Node::Program(Program { statements }))
     }
 
     /// stmt = expr ';'?
-    fn parse_stmt(&mut self) -> PResult<Stmt> {
+    fn parse_stmt(&mut self) -> PResult<Statement> {
         let expr = self.parse_expr()?;
 
         if self.consume(SemiColon) {
-            return Ok(ExprStmt(expr));
+            return Ok(Statement::ExprStmt(expr));
         }
 
-        Ok(ExprReturnStmt(expr))
+        Ok(Statement::ExprReturnStmt(expr))
     }
 
     /// expr = let_expr | if_expr | return_expr | assign
-    fn parse_expr(&mut self) -> PResult<Expr> {
+    fn parse_expr(&mut self) -> PResult<Expression> {
         if self.peek(Let) {
             return self.parse_let_expr();
         }
@@ -118,7 +118,7 @@ impl Parser {
     }
 
     /// let_expr = 'let' (ident | ident '(' ident,* ')') '=' expr
-    fn parse_let_expr(&mut self) -> PResult<Expr> {
+    fn parse_let_expr(&mut self) -> PResult<Expression> {
         self.expect(Let)?;
 
         let name = Box::new(self.parse_ident()?);
@@ -131,7 +131,11 @@ impl Parser {
 
                 let body = Box::new(self.parse_expr()?);
 
-                return Ok(FunctionDefExpr { name, params, body });
+                return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
+                    name,
+                    params,
+                    body,
+                }));
             }
 
             let token = self.parse_ident()?;
@@ -149,18 +153,22 @@ impl Parser {
 
             let body = Box::new(self.parse_expr()?);
 
-            return Ok(FunctionDefExpr { name, params, body });
+            return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
+                name,
+                params,
+                body,
+            }));
         }
 
         self.expect(TokenKind::Assign)?;
 
         let value = Box::new(self.parse_expr()?);
 
-        Ok(LetExpr { name, value })
+        Ok(Expression::LetExpr(LetExpr { name, value }))
     }
 
     /// if_expr = 'if' expr expr ('else' expr)?
-    fn parse_if_expr(&mut self) -> PResult<Expr> {
+    fn parse_if_expr(&mut self) -> PResult<Expression> {
         self.expect(If)?;
 
         let condition = Box::new(self.parse_expr()?);
@@ -171,75 +179,78 @@ impl Parser {
             None
         };
 
-        Ok(IfExpr {
+        Ok(Expression::IfExpr(IfExpr {
             condition,
             consequence,
             alternative,
-        })
+        }))
     }
 
     /// return_expr = 'return' expr
-    fn parse_return_expr(&mut self) -> PResult<Expr> {
+    fn parse_return_expr(&mut self) -> PResult<Expression> {
         self.expect(Return)?;
 
-        Ok(ReturnExpr(Box::new(self.parse_expr()?)))
+        Ok(Expression::ReturnExpr(ReturnExpr {
+            value: Box::new(self.parse_expr()?),
+        }))
     }
 
-    /// assign = add ('=' add)?
-    fn parse_assign(&mut self) -> PResult<Expr> {
+    /// assign = relation ('=' relation)?
+    fn parse_assign(&mut self) -> PResult<Expression> {
         let node = self.parse_relation()?;
 
         if self.consume(TokenKind::Assign) {
-            return Ok(AssignExpr {
-                name: Box::new(node),
-                value: Box::new(self.parse_relation()?),
-            });
+            return Ok(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Assign,
+                lhs: Box::new(node),
+                rhs: Box::new(self.parse_relation()?),
+            }));
         }
 
         Ok(node)
     }
 
     /// relation = add ('==' add | '!=' add | '<' add | '<=' add | '>' add | '>=' add)*
-    fn parse_relation(&mut self) -> PResult<Expr> {
+    fn parse_relation(&mut self) -> PResult<Expression> {
         let mut node = self.parse_add()?;
 
         loop {
             if self.consume(TokenKind::Eq) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Eq,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else if self.consume(TokenKind::Ne) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Ne,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else if self.consume(TokenKind::Lt) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Lt,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else if self.consume(TokenKind::Le) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Le,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else if self.consume(TokenKind::Gt) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Gt,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else if self.consume(TokenKind::Ge) {
-                node = BinaryExpr {
+                node = Expression::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Ge,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
-                };
+                });
             } else {
                 return Ok(node);
             }
@@ -247,81 +258,113 @@ impl Parser {
     }
 
     /// add = mul ('+' mul | '-' mul)*
-    fn parse_add(&mut self) -> PResult<Expr> {
+    fn parse_add(&mut self) -> PResult<Expression> {
         let mut node = self.parse_mul()?;
 
         loop {
             if self.consume(Plus) {
-                node = BinaryExpr {
-                    kind: Add,
+                node = Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Add,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_mul()?),
-                };
+                });
             } else if self.consume(Minus) {
-                node = BinaryExpr {
-                    kind: Sub,
+                node = Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Sub,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_mul()?),
-                };
+                });
             } else {
                 return Ok(node);
             }
         }
     }
 
-    /// mul = index ('*' index | '/' index)*
-    fn parse_mul(&mut self) -> PResult<Expr> {
-        let mut node = self.parse_index()?;
+    /// mul = unary ('*' unary | '/' unary )*
+    fn parse_mul(&mut self) -> PResult<Expression> {
+        let mut node = self.parse_unary()?;
 
         loop {
             if self.consume(Asterisk) {
-                node = BinaryExpr {
-                    kind: Mul,
+                node = Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Mul,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_index()?),
-                };
+                    rhs: Box::new(self.parse_unary()?),
+                });
             } else if self.consume(Slash) {
-                node = BinaryExpr {
-                    kind: Div,
+                node = Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Div,
                     lhs: Box::new(node),
-                    rhs: Box::new(self.parse_index()?),
-                };
+                    rhs: Box::new(self.parse_unary()?),
+                });
             } else {
                 return Ok(node);
             }
         }
     }
 
+    /// unary = '!' unary | '*' unary | '&' unary | '-' index | index
+    fn parse_unary(&mut self) -> PResult<Expression> {
+        if self.consume(Bang) {
+            return Ok(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Not,
+                expr: Box::new(self.parse_unary()?),
+            }));
+        }
+
+        if self.consume(Asterisk) {
+            return Ok(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Deref,
+                expr: Box::new(self.parse_unary()?),
+            }));
+        }
+
+        if self.consume(Ampersand) {
+            return Ok(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Ref,
+                expr: Box::new(self.parse_unary()?),
+            }));
+        }
+
+        if self.consume(Minus) {
+            return Ok(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Minus,
+                expr: Box::new(self.parse_index()?),
+            }));
+        }
+
+        self.parse_index()
+    }
+
     /// index = call ('[' expr ']')*
-    fn parse_index(&mut self) -> PResult<Expr> {
+    fn parse_index(&mut self) -> PResult<Expression> {
         let mut node = self.parse_call()?;
 
         while self.consume(LBracket) {
             let index = Box::new(self.parse_expr()?);
 
-            node = BinaryExpr {
-                kind: Index,
-                lhs: Box::new(node),
-                rhs: index,
-            };
+            node = Expression::IndexExpr(IndexExpr {
+                array: Box::new(node),
+                index,
+            });
             self.expect(RBracket)?;
         }
 
         Ok(node)
     }
 
-    /// call = unary ('(' expr,* ')')?
-    fn parse_call(&mut self) -> PResult<Expr> {
-        let node = self.parse_unary()?;
+    /// call = primary ('(' expr,* ')')?
+    fn parse_call(&mut self) -> PResult<Expression> {
+        let node = self.parse_primary()?;
 
         if self.consume(LParen) {
             let mut args = Vec::new();
 
             if self.consume(RParen) {
-                return Ok(CallExpr {
+                return Ok(Expression::CallExpr(CallExpr {
                     func: Box::new(node),
                     args,
-                });
+                }));
             }
 
             args.push(self.parse_expr()?);
@@ -332,50 +375,17 @@ impl Parser {
 
             self.expect(RParen)?;
 
-            return Ok(CallExpr {
+            return Ok(Expression::CallExpr(CallExpr {
                 func: Box::new(node),
                 args,
-            });
+            }));
         }
 
         Ok(node)
     }
 
-    /// unary = '!' unary | '*' unary | '&' unary | '-' primary | primary
-    fn parse_unary(&mut self) -> PResult<Expr> {
-        if self.consume(Bang) {
-            return Ok(UnaryExpr {
-                kind: UnaryExprKind::Not,
-                expr: Box::new(self.parse_unary()?),
-            });
-        }
-
-        if self.consume(Asterisk) {
-            return Ok(UnaryExpr {
-                kind: UnaryExprKind::Deref,
-                expr: Box::new(self.parse_unary()?),
-            });
-        }
-
-        if self.consume(Ampersand) {
-            return Ok(UnaryExpr {
-                kind: UnaryExprKind::Ref,
-                expr: Box::new(self.parse_unary()?),
-            });
-        }
-
-        if self.consume(Minus) {
-            return Ok(UnaryExpr {
-                kind: UnaryExprKind::Minus,
-                expr: Box::new(self.parse_primary()?),
-            });
-        }
-
-        self.parse_primary()
-    }
-
     /// primary = '(' expr ')' | block_expr | array | integer | ident | bool
-    fn parse_primary(&mut self) -> PResult<Expr> {
+    fn parse_primary(&mut self) -> PResult<Expression> {
         if self.consume(LParen) {
             let expr = self.parse_expr()?;
 
@@ -404,75 +414,76 @@ impl Parser {
     }
 
     /// block_expr = '{' stmt* '}'
-    fn parse_block_expr(&mut self) -> PResult<Expr> {
+    fn parse_block_expr(&mut self) -> PResult<Expression> {
         self.expect(LBrace)?;
 
-        let mut stmts = Vec::new();
+        let mut statements = Vec::new();
 
         while !self.consume(RBrace) {
             if self.consume(EOF) {
                 return Err(ParserError::UnexpectedToken {
                     expected: RBrace,
-                    got: EOF,
+                    actual: EOF,
                 });
             }
 
             let stmt = self.parse_stmt()?;
 
-            stmts.push(stmt);
+            statements.push(stmt);
         }
 
-        Ok(BlockExpr(stmts))
+        // Ok(BlockExpr(stmts))
+        Ok(Expression::BlockExpr(BlockExpr { statements }))
     }
 
     /// array = '[' expr,* ']'
-    fn parse_array(&mut self) -> PResult<Expr> {
+    fn parse_array(&mut self) -> PResult<Expression> {
         self.expect(LBracket)?;
 
-        let mut values = Vec::new();
+        let mut elements = Vec::new();
 
         if self.consume(RBracket) {
-            return Ok(Array(values));
+            return Ok(Expression::Array(Array { elements }));
         }
 
-        values.push(self.parse_expr()?);
+        elements.push(self.parse_expr()?);
 
         while self.consume(Comma) {
-            values.push(self.parse_expr()?);
+            elements.push(self.parse_expr()?);
         }
 
         self.expect(RBracket)?;
 
-        Ok(Array(values))
+        Ok(Expression::Array(Array { elements }))
     }
 
     /// integer = [0-9]*
-    fn parse_integer(&mut self) -> PResult<Expr> {
+    fn parse_integer(&mut self) -> PResult<Expression> {
         let token = self.expect(Number)?;
-        let literal = token
-            .literal()
+        let value = token
+            .literal
             .parse::<isize>()
             .map_err(ParserError::ParseIntError)?;
 
-        Ok(Integer(literal))
+        Ok(Expression::Integer(Integer { value }))
     }
 
     /// ident = ([a-zA-Z] | '_') ([a-zA-Z0-9] | '_')*
-    fn parse_ident(&mut self) -> PResult<Expr> {
+    fn parse_ident(&mut self) -> PResult<Expression> {
         let token = self.expect(TokenKind::Ident)?;
-        let literal = token.literal().to_string();
+        let literal = token.literal;
 
-        Ok(Expr::Ident(literal))
+        Ok(Expression::Ident(Ident { name: literal }))
     }
 
     /// bool = 'true' | 'false'
-    fn parse_bool(&mut self) -> PResult<Expr> {
+    fn parse_bool(&mut self) -> PResult<Expression> {
         if self.consume(True) {
-            return Ok(Boolean(true));
+            return Ok(Expression::Boolean(Boolean { value: true }));
         }
 
         self.expect(False)?;
 
-        Ok(Boolean(false))
+        Ok(Expression::Boolean(Boolean { value: false }))
     }
 }

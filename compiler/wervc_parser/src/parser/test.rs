@@ -1,5 +1,5 @@
 use super::{error::ParserError, Parser};
-use wervc_ast::{BinaryExprKind::*, Expr::*, Stmt::*, UnaryExprKind};
+use wervc_ast::*;
 use wervc_lexer::token::TokenKind;
 
 fn loop_assert<T, U, const N: usize>(inputs: [T; N], expects: [U; N], f: impl Fn(&mut Parser, U))
@@ -19,7 +19,7 @@ fn parse_error_test() {
     let expects = [
         ParserError::UnexpectedToken {
             expected: TokenKind::RBrace,
-            got: TokenKind::EOF,
+            actual: TokenKind::EOF,
         },
         ParserError::RequiredSemiColon,
     ];
@@ -42,50 +42,68 @@ fn parse_stmt_test() {
         "x = 1 + 2",
     ];
     let expects = [
-        ExprStmt(BinaryExpr {
-            kind: Add,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        }),
-        ExprReturnStmt(BinaryExpr {
-            kind: Add,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        }),
-        ExprStmt(LetExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        }),
-        ExprReturnStmt(LetExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        }),
-        ExprStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
-        ExprReturnStmt(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
-        ExprStmt(AssignExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        }),
-        ExprReturnStmt(AssignExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        }),
+        Statement::ExprStmt(Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Add,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        })),
+        Statement::ExprReturnStmt(Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Add,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        })),
+        Statement::ExprStmt(Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        })),
+        Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        })),
+        Statement::ExprStmt(Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                value: 10,
+            }))],
+        })),
+        Statement::ExprReturnStmt(Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                value: 10,
+            }))],
+        })),
+        Statement::ExprStmt(Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Assign,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        })),
+        Statement::ExprReturnStmt(Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Assign,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        })),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -96,7 +114,10 @@ fn parse_stmt_test() {
 #[test]
 fn parse_integer_test() {
     let inputs = ["0", "42"];
-    let expects = [Integer(0), Integer(42)];
+    let expects = [
+        Expression::Integer(Integer { value: 0 }),
+        Expression::Integer(Integer { value: 42 }),
+    ];
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_integer().unwrap())
@@ -107,28 +128,32 @@ fn parse_integer_test() {
 fn parse_binary_expr_test() {
     let inputs = ["1 + (2 - 3) * 4 / 5", "x + y"];
     let expects = [
-        BinaryExpr {
-            kind: Add,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(BinaryExpr {
-                kind: Div,
-                lhs: Box::new(BinaryExpr {
-                    kind: Mul,
-                    lhs: Box::new(BinaryExpr {
-                        kind: Sub,
-                        lhs: Box::new(Integer(2)),
-                        rhs: Box::new(Integer(3)),
-                    }),
-                    rhs: Box::new(Integer(4)),
-                }),
-                rhs: Box::new(Integer(5)),
-            }),
-        },
-        BinaryExpr {
-            kind: Add,
-            lhs: Box::new(Ident("x".to_string())),
-            rhs: Box::new(Ident("y".to_string())),
-        },
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Add,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Div,
+                lhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Mul,
+                    lhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                        kind: BinaryExprKind::Sub,
+                        lhs: Box::new(Expression::Integer(Integer { value: 2 })),
+                        rhs: Box::new(Expression::Integer(Integer { value: 3 })),
+                    })),
+                    rhs: Box::new(Expression::Integer(Integer { value: 4 })),
+                })),
+                rhs: Box::new(Expression::Integer(Integer { value: 5 })),
+            })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Add,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::Ident(Ident {
+                name: "y".to_string(),
+            })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -147,41 +172,75 @@ fn parse_let_expr() {
         "let zero() = 0",
     ];
     let expects = [
-        LetExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        },
-        LetExpr {
-            name: Box::new(Ident("foo_bar".to_string())),
-            value: Box::new(Ident("x".to_string())),
-        },
-        LetExpr {
-            name: Box::new(Ident("_123".to_string())),
-            value: Box::new(Ident("_4567890".to_string())),
-        },
-        FunctionDefExpr {
-            name: Box::new(Ident("id".to_string())),
-            params: vec![Ident("x".to_string())],
-            body: Box::new(Ident("x".to_string())),
-        },
-        FunctionDefExpr {
-            name: Box::new(Ident("add".to_string())),
-            params: vec![Ident("x".to_string()), Ident("y".to_string())],
-            body: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Ident("x".to_string())),
-                rhs: Box::new(Ident("y".to_string())),
-            }),
-        },
-        FunctionDefExpr {
-            name: Box::new(Ident("zero".to_string())),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        }),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "foo_bar".to_string(),
+            })),
+            value: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+        }),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "_123".to_string(),
+            })),
+            value: Box::new(Expression::Ident(Ident {
+                name: "_4567890".to_string(),
+            })),
+        }),
+        Expression::FunctionDefExpr(FunctionDefExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "id".to_string(),
+            })),
+
+            params: vec![Expression::Ident(Ident {
+                name: "x".to_string(),
+            })],
+            body: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+        }),
+        Expression::FunctionDefExpr(FunctionDefExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "add".to_string(),
+            })),
+
+            params: vec![
+                Expression::Ident(Ident {
+                    name: "x".to_string(),
+                }),
+                Expression::Ident(Ident {
+                    name: "y".to_string(),
+                }),
+            ],
+            body: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Ident(Ident {
+                    name: "x".to_string(),
+                })),
+                rhs: Box::new(Expression::Ident(Ident {
+                    name: "y".to_string(),
+                })),
+            })),
+        }),
+        Expression::FunctionDefExpr(FunctionDefExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "zero".to_string(),
+            })),
+
             params: vec![],
-            body: Box::new(Integer(0)),
-        },
+            body: Box::new(Expression::Integer(Integer { value: 0 })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -199,23 +258,49 @@ fn parse_block_expr() {
         "{ return 10; }",
     ];
     let expects = [
-        BlockExpr(vec![ExprReturnStmt(Integer(10))]),
-        BlockExpr(vec![
-            ExprStmt(LetExpr {
-                name: Box::new(Ident("x".to_string())),
-                value: Box::new(Integer(10)),
-            }),
-            ExprReturnStmt(Ident("x".to_string())),
-        ]),
-        BlockExpr(vec![ExprStmt(LetExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(Integer(10)),
-        })]),
-        BlockExpr(vec![ExprReturnStmt(LetExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
-        })]),
-        BlockExpr(vec![ExprStmt(ReturnExpr(Box::new(Integer(10))))]),
+        Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                value: 10,
+            }))],
+        }),
+        Expression::BlockExpr(BlockExpr {
+            statements: vec![
+                Statement::ExprStmt(Expression::LetExpr(LetExpr {
+                    name: Box::new(Expression::Ident(Ident {
+                        name: "x".to_string(),
+                    })),
+                    value: Box::new(Expression::Integer(Integer { value: 10 })),
+                })),
+                Statement::ExprReturnStmt(Expression::Ident(Ident {
+                    name: "x".to_string(),
+                })),
+            ],
+        }),
+        Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprStmt(Expression::LetExpr(LetExpr {
+                name: Box::new(Expression::Ident(Ident {
+                    name: "x".to_string(),
+                })),
+                value: Box::new(Expression::Integer(Integer { value: 10 })),
+            }))],
+        }),
+        Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
+                name: Box::new(Expression::Ident(Ident {
+                    name: "x".to_string(),
+                })),
+                value: Box::new(Expression::BlockExpr(BlockExpr {
+                    statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                        value: 10,
+                    }))],
+                })),
+            }))],
+        }),
+        Expression::BlockExpr(BlockExpr {
+            statements: vec![Statement::ExprStmt(Expression::ReturnExpr(ReturnExpr {
+                value: Box::new(Expression::Integer(Integer { value: 10 })),
+            }))],
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -227,22 +312,37 @@ fn parse_block_expr() {
 fn parse_assign_test() {
     let inputs = ["x = 1 + 2", "x = y", "x = { 10 }"];
     let expects = [
-        AssignExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        },
-        AssignExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(Ident("y".to_string())),
-        },
-        AssignExpr {
-            name: Box::new(Ident("x".to_string())),
-            value: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
-        },
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Assign,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Assign,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::Ident(Ident {
+                name: "y".to_string(),
+            })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Assign,
+            lhs: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+            rhs: Box::new(Expression::BlockExpr(BlockExpr {
+                statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                    value: 10,
+                }))],
+            })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -254,14 +354,22 @@ fn parse_assign_test() {
 fn parse_call_test() {
     let inputs = ["foo()", "foo(1,2,3)"];
     let expects = [
-        CallExpr {
-            func: Box::new(Ident("foo".to_string())),
+        Expression::CallExpr(CallExpr {
+            func: Box::new(Expression::Ident(Ident {
+                name: "foo".to_string(),
+            })),
             args: vec![],
-        },
-        CallExpr {
-            func: Box::new(Ident("foo".to_string())),
-            args: vec![Integer(1), Integer(2), Integer(3)],
-        },
+        }),
+        Expression::CallExpr(CallExpr {
+            func: Box::new(Expression::Ident(Ident {
+                name: "foo".to_string(),
+            })),
+            args: vec![
+                Expression::Integer(Integer { value: 1 }),
+                Expression::Integer(Integer { value: 2 }),
+                Expression::Integer(Integer { value: 3 }),
+            ],
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -273,36 +381,36 @@ fn parse_call_test() {
 fn parse_relation_test() {
     let inputs = ["1 < 2", "1 <= 2", "1 > 2", "1 >= 2", "1 == 2", "1 != 2"];
     let expects = [
-        BinaryExpr {
-            kind: Lt,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
-        BinaryExpr {
-            kind: Le,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
-        BinaryExpr {
-            kind: Gt,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
-        BinaryExpr {
-            kind: Ge,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
-        BinaryExpr {
-            kind: Eq,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
-        BinaryExpr {
-            kind: Ne,
-            lhs: Box::new(Integer(1)),
-            rhs: Box::new(Integer(2)),
-        },
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Lt,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Le,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Gt,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Ge,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Eq,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
+        Expression::BinaryExpr(BinaryExpr {
+            kind: BinaryExprKind::Ne,
+            lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+            rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -318,29 +426,41 @@ fn parse_if_expr_test() {
         "if true false",
     ];
     let expects = [
-        IfExpr {
-            condition: Box::new(BinaryExpr {
-                kind: Lt,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-            consequence: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
-            alternative: Some(Box::new(BlockExpr(vec![ExprReturnStmt(Integer(20))]))),
-        },
-        IfExpr {
-            condition: Box::new(BinaryExpr {
-                kind: Lt,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-            consequence: Box::new(BlockExpr(vec![ExprReturnStmt(Integer(10))])),
+        Expression::IfExpr(IfExpr {
+            condition: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Lt,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+            consequence: Box::new(Expression::BlockExpr(BlockExpr {
+                statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                    value: 10,
+                }))],
+            })),
+            alternative: Some(Box::new(Expression::BlockExpr(BlockExpr {
+                statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                    value: 20,
+                }))],
+            }))),
+        }),
+        Expression::IfExpr(IfExpr {
+            condition: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Lt,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+            consequence: Box::new(Expression::BlockExpr(BlockExpr {
+                statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
+                    value: 10,
+                }))],
+            })),
             alternative: None,
-        },
-        IfExpr {
-            condition: Box::new(Boolean(true)),
-            consequence: Box::new(Boolean(false)),
+        }),
+        Expression::IfExpr(IfExpr {
+            condition: Box::new(Expression::Boolean(Boolean { value: true })),
+            consequence: Box::new(Expression::Boolean(Boolean { value: false })),
             alternative: None,
-        },
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -351,7 +471,10 @@ fn parse_if_expr_test() {
 #[test]
 fn parse_bool_test() {
     let inputs = ["true", "false"];
-    let expects = [Boolean(true), Boolean(false)];
+    let expects = [
+        Expression::Boolean(Boolean { value: true }),
+        Expression::Boolean(Boolean { value: false }),
+    ];
 
     loop_assert(inputs, expects, |parser, expect| {
         assert_eq!(expect, parser.parse_bool().unwrap())
@@ -362,8 +485,12 @@ fn parse_bool_test() {
 fn parse_return_expr_test() {
     let inputs = ["return 10", "return true"];
     let expects = [
-        ReturnExpr(Box::new(Integer(10))),
-        ReturnExpr(Box::new(Boolean(true))),
+        Expression::ReturnExpr(ReturnExpr {
+            value: Box::new(Expression::Integer(Integer { value: 10 })),
+        }),
+        Expression::ReturnExpr(ReturnExpr {
+            value: Box::new(Expression::Boolean(Boolean { value: true })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -373,30 +500,95 @@ fn parse_return_expr_test() {
 
 #[test]
 fn parse_unary_test() {
-    let inputs = ["!true", "-10", "!!true", "-(-10)"];
+    let inputs = [
+        "!true", "-10", "!!true", "-(-10)", "&x", "*p", "*&p", "******p", "&&&&&&p",
+    ];
     let expects = [
-        UnaryExpr {
+        Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Not,
-            expr: Box::new(Boolean(true)),
-        },
-        UnaryExpr {
+            expr: Box::new(Expression::Boolean(Boolean { value: true })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Minus,
-            expr: Box::new(Integer(10)),
-        },
-        UnaryExpr {
+            expr: Box::new(Expression::Integer(Integer { value: 10 })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Not,
-            expr: Box::new(UnaryExpr {
+            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
                 kind: UnaryExprKind::Not,
-                expr: Box::new(Boolean(true)),
-            }),
-        },
-        UnaryExpr {
+                expr: Box::new(Expression::Boolean(Boolean { value: true })),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Minus,
-            expr: Box::new(UnaryExpr {
+            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
                 kind: UnaryExprKind::Minus,
-                expr: Box::new(Integer(10)),
-            }),
-        },
+                expr: Box::new(Expression::Integer(Integer { value: 10 })),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Ref,
+            expr: Box::new(Expression::Ident(Ident {
+                name: "x".to_string(),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Deref,
+            expr: Box::new(Expression::Ident(Ident {
+                name: "p".to_string(),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Deref,
+            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Ref,
+                expr: Box::new(Expression::Ident(Ident {
+                    name: "p".to_string(),
+                })),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Deref,
+            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Deref,
+                expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                    kind: UnaryExprKind::Deref,
+                    expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                        kind: UnaryExprKind::Deref,
+                        expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                            kind: UnaryExprKind::Deref,
+                            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                                kind: UnaryExprKind::Deref,
+                                expr: Box::new(Expression::Ident(Ident {
+                                    name: "p".to_string(),
+                                })),
+                            })),
+                        })),
+                    })),
+                })),
+            })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Ref,
+            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Ref,
+                expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                    kind: UnaryExprKind::Ref,
+                    expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                        kind: UnaryExprKind::Ref,
+                        expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                            kind: UnaryExprKind::Ref,
+                            expr: Box::new(Expression::UnaryExpr(UnaryExpr {
+                                kind: UnaryExprKind::Ref,
+                                expr: Box::new(Expression::Ident(Ident {
+                                    name: "p".to_string(),
+                                })),
+                            })),
+                        })),
+                    })),
+                })),
+            })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -408,8 +600,14 @@ fn parse_unary_test() {
 fn parse_array_test() {
     let inputs = ["[1,2,3]", "[]"];
     let expects = [
-        Array(vec![Integer(1), Integer(2), Integer(3)]),
-        Array(vec![]),
+        Expression::Array(Array {
+            elements: vec![
+                Expression::Integer(Integer { value: 1 }),
+                Expression::Integer(Integer { value: 2 }),
+                Expression::Integer(Integer { value: 3 }),
+            ],
+        }),
+        Expression::Array(Array { elements: vec![] }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -421,34 +619,43 @@ fn parse_array_test() {
 fn parse_index_test() {
     let inputs = ["array[1]", "array[1+2]", "[1,2,3][0]", "[[1]][0][0]"];
     let expects = [
-        BinaryExpr {
-            kind: Index,
-            lhs: Box::new(Ident("array".to_string())),
-            rhs: Box::new(Integer(1)),
-        },
-        BinaryExpr {
-            kind: Index,
-            lhs: Box::new(Ident("array".to_string())),
-            rhs: Box::new(BinaryExpr {
-                kind: Add,
-                lhs: Box::new(Integer(1)),
-                rhs: Box::new(Integer(2)),
-            }),
-        },
-        BinaryExpr {
-            kind: Index,
-            lhs: Box::new(Array(vec![Integer(1), Integer(2), Integer(3)])),
-            rhs: Box::new(Integer(0)),
-        },
-        BinaryExpr {
-            kind: Index,
-            lhs: Box::new(BinaryExpr {
-                kind: Index,
-                lhs: Box::new(Array(vec![Array(vec![Integer(1)])])),
-                rhs: Box::new(Integer(0)),
-            }),
-            rhs: Box::new(Integer(0)),
-        },
+        Expression::IndexExpr(IndexExpr {
+            array: Box::new(Expression::Ident(Ident {
+                name: "array".to_string(),
+            })),
+            index: Box::new(Expression::Integer(Integer { value: 1 })),
+        }),
+        Expression::IndexExpr(IndexExpr {
+            array: Box::new(Expression::Ident(Ident {
+                name: "array".to_string(),
+            })),
+            index: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+            })),
+        }),
+        Expression::IndexExpr(IndexExpr {
+            array: Box::new(Expression::Array(Array {
+                elements: vec![
+                    Expression::Integer(Integer { value: 1 }),
+                    Expression::Integer(Integer { value: 2 }),
+                    Expression::Integer(Integer { value: 3 }),
+                ],
+            })),
+            index: Box::new(Expression::Integer(Integer { value: 0 })),
+        }),
+        Expression::IndexExpr(IndexExpr {
+            array: Box::new(Expression::IndexExpr(IndexExpr {
+                array: Box::new(Expression::Array(Array {
+                    elements: vec![Expression::Array(Array {
+                        elements: vec![Expression::Integer(Integer { value: 1 })],
+                    })],
+                })),
+                index: Box::new(Expression::Integer(Integer { value: 0 })),
+            })),
+            index: Box::new(Expression::Integer(Integer { value: 0 })),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
