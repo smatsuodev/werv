@@ -4,7 +4,7 @@ assert() {
   input="$2"
 
   echo "$input" > tmp.we
-  cargo -q run --release tmp.we 2> /dev/null > tmp.s
+  cargo run --release tmp.we 2> /dev/null > tmp.s
   cc -o tmp tmp.s
   ./tmp
   actual="$?"
@@ -12,7 +12,7 @@ assert() {
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
-    cargo run --release tmp.we 2> /dev/null > tmp.s
+    cargo run --release tmp.we > tmp.s
     cc -o tmp tmp.s
     ./tmp
     actual="$?"
