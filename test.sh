@@ -59,8 +59,17 @@ assert 6 "foo = 1; bar = 2 + 3; foo + bar"
 
 assert 6 "foo = 1; bar = 2 + 3; return foo + bar;"
 
-assert 10 "a = 1; if(a) 10";
-assert 20 "a = 0; if(a) 10 else 20";
-assert 10 "a = 0; if(a == 0) 10 else 20";
+assert 10 "a = 1; if a 10";
+assert 20 "a = 0; if a 10 else 20";
+assert 20 "a = 0; b = 1; if a 10 else if b 20 else 30";
+assert 30 "a = 0; b = 0; if a 10 else if b 20 else 30";
+assert 10 "a = 0; if a == 0 10 else 20";
+
+assert 10 "{10}"
+assert 10 "{{{10}}}"
+assert 20 "{10}; 20"
+assert 10 "{return 10;}; 20"
+assert 11 "if 1 { 10; 10 + 1 } else { 20; 10 }"
+assert 10 "if 0 { 10; 10 + 1 } else { 20; 10 }"
 
 echo OK

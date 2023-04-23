@@ -4,7 +4,8 @@ use std::fmt::Display;
 
 use error::CompileError;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, Expression, Integer, Node, Program, ReturnExpr, UnaryExpr,
+    BinaryExpr, BinaryExprKind, BlockExpr, Expression, Integer, Node, Program, ReturnExpr,
+    Statement, UnaryExpr,
 };
 use wervc_parser::parser::Parser;
 
@@ -144,25 +145,36 @@ impl Compiler {
         self.gen_prelude();
         self.gen_prologue(*total_offset);
 
-        for statement in statements {
-            match statement {
-                wervc_ast::Statement::ExprStmt(e) => {
-                    self.gen_expr(e)?;
-                    self.pop("rax");
-                    self.mov("rax", 0);
-                    self.push("rax");
-                }
-                wervc_ast::Statement::ExprReturnStmt(e) => {
-                    self.gen_expr(e)?;
-                }
-            }
-
-            self.pop("rax");
-        }
+        self.gen_statements(statements)?;
 
         self.mov("rsp", "rbp");
         self.pop("rbp");
         self.ret();
+
+        Ok(())
+    }
+
+    fn gen_statements(&mut self, statements: &Vec<Statement>) -> CResult {
+        for statement in statements {
+            self.gen_statement(statement)?;
+            self.pop("rax");
+        }
+
+        Ok(())
+    }
+
+    fn gen_statement(&mut self, statement: &Statement) -> CResult {
+        match statement {
+            Statement::ExprStmt(e) => {
+                self.gen_expr(e)?;
+                self.pop("rax");
+                self.mov("rax", 0);
+                self.push("rax");
+            }
+            Statement::ExprReturnStmt(e) => {
+                self.gen_expr(e)?;
+            }
+        }
 
         Ok(())
     }
@@ -175,12 +187,14 @@ impl Compiler {
             Expression::Ident(_) => self.gen_ident(e),
             Expression::ReturnExpr(e) => self.gen_return_expr(e),
             Expression::IfExpr(e) => self.gen_if_expr(e),
+            Expression::BlockExpr(e) => self.gen_block_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
 
     fn gen_integer(&mut self, e: &Integer) -> CResult {
         self.push(e.value);
+
         Ok(())
     }
 
@@ -332,6 +346,13 @@ impl Compiler {
             self.gen_expr(&e.consequence)?;
             self.gen_label(end_label);
         }
+
+        Ok(())
+    }
+
+    fn gen_block_expr(&mut self, e: &BlockExpr) -> CResult {
+        self.gen_statements(&e.statements)?;
+        self.push("rax");
 
         Ok(())
     }
