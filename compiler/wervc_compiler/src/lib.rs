@@ -12,18 +12,40 @@ type CResult = Result<(), CompileError>;
 
 pub struct Compiler {
     pub output: String,
+    pub label_count: usize,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         Self {
             output: String::new(),
+            label_count: 0,
         }
     }
 
     fn add_code(&mut self, code: impl ToString) {
         self.output.push_str(code.to_string().as_str());
         self.output.push('\n');
+    }
+
+    fn get_serial_label(&mut self, label: impl Display) -> String {
+        let label = format!(".L{}{:>03}", label, self.label_count);
+
+        self.label_count += 1;
+
+        label
+    }
+
+    fn get_if_end_label(&mut self) -> String {
+        self.get_serial_label("end")
+    }
+
+    fn get_if_else_label(&mut self) -> String {
+        self.get_serial_label("else")
+    }
+
+    fn gen_label(&mut self, label: impl Display) {
+        self.add_code(format!("{}:", label));
     }
 
     fn nullary(&mut self, operation: impl Display) {
@@ -42,16 +64,16 @@ impl Compiler {
         self.binary_op("mov", lhs, rhs);
     }
 
-    fn push(&mut self, code: impl Display) {
-        self.unary_op("push", code);
+    fn push(&mut self, from: impl Display) {
+        self.unary_op("push", from);
     }
 
     fn ret(&mut self) {
         self.nullary("ret");
     }
 
-    fn pop(&mut self, code: impl Display) {
-        self.unary_op("pop", code);
+    fn pop(&mut self, to: impl Display) {
+        self.unary_op("pop", to);
     }
 
     fn add(&mut self, lhs: impl Display, rhs: impl Display) {
@@ -81,6 +103,14 @@ impl Compiler {
 
     fn movzb(&mut self, lhs: impl Display, rhs: impl Display) {
         self.add_code(format!("  movzb {}, {}", lhs, rhs));
+    }
+
+    fn je(&mut self, label: impl Display) {
+        self.unary_op("je", label);
+    }
+
+    fn jmp(&mut self, label: impl Display) {
+        self.unary_op("jmp", label);
     }
 
     pub fn compile(&mut self, program: impl ToString) -> CResult {
@@ -144,6 +174,7 @@ impl Compiler {
             Expression::UnaryExpr(e) => self.gen_unary_expr(e),
             Expression::Ident(_) => self.gen_ident(e),
             Expression::ReturnExpr(e) => self.gen_return_expr(e),
+            Expression::IfExpr(e) => self.gen_if_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -274,6 +305,33 @@ impl Compiler {
         self.mov("rsp", "rbp");
         self.pop("rbp");
         self.ret();
+
+        Ok(())
+    }
+
+    fn gen_if_expr(&mut self, e: &wervc_ast::IfExpr) -> CResult {
+        self.gen_expr(&e.condition)?;
+        self.pop("rax");
+        self.cmp("rax", 0);
+
+        if let Some(alternative) = &e.alternative {
+            let else_label = self.get_if_else_label();
+            let end_label = self.get_if_end_label();
+
+            self.je(&else_label);
+            self.gen_expr(&e.consequence)?;
+
+            self.jmp(&end_label);
+            self.gen_label(else_label);
+            self.gen_expr(alternative)?;
+            self.gen_label(end_label);
+        } else {
+            let end_label = self.get_if_end_label();
+
+            self.je(&end_label);
+            self.gen_expr(&e.consequence)?;
+            self.gen_label(end_label);
+        }
 
         Ok(())
     }

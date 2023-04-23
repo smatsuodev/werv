@@ -59,4 +59,8 @@ assert 6 "foo = 1; bar = 2 + 3; foo + bar"
 
 assert 6 "foo = 1; bar = 2 + 3; return foo + bar;"
 
+assert 10 "a = 1; if(a) 10";
+assert 20 "a = 0; if(a) 10 else 20";
+assert 10 "a = 0; if(a == 0) 10 else 20";
+
 echo OK
