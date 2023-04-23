@@ -89,10 +89,6 @@ impl Compiler {
         self.depth -= 1;
     }
 
-    fn and(&mut self, lhs: impl Display, rhs: impl Display) {
-        self.binary_op("and", lhs, rhs);
-    }
-
     fn add(&mut self, lhs: impl Display, rhs: impl Display) {
         self.binary_op("add", lhs, rhs);
     }
