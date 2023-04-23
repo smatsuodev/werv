@@ -4,16 +4,21 @@ use std::fmt::Display;
 
 use error::CompileError;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, BlockExpr, Expression, Integer, Node, Program, ReturnExpr,
-    Statement, UnaryExpr,
+    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, Integer, Node, Program,
+    ReturnExpr, Statement, UnaryExpr,
 };
 use wervc_parser::parser::Parser;
 
 type CResult = Result<(), CompileError>;
 
+const X86_64_ARG_REGISTERS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+
 pub struct Compiler {
     pub output: String,
     pub label_count: usize,
+    // push/pop によって rsp が変化するので、その変化量を記録しておく
+    // これは、関数の prologue/epilogue で rsp を調整するために必要
+    pub depth: usize,
 }
 
 impl Compiler {
@@ -21,6 +26,7 @@ impl Compiler {
         Self {
             output: String::new(),
             label_count: 0,
+            depth: 0,
         }
     }
 
@@ -65,16 +71,26 @@ impl Compiler {
         self.binary_op("mov", lhs, rhs);
     }
 
-    fn push(&mut self, from: impl Display) {
-        self.unary_op("push", from);
+    fn call(&mut self, name: impl Display) {
+        self.unary_op("call", name);
     }
 
     fn ret(&mut self) {
         self.nullary("ret");
     }
 
+    fn push(&mut self, from: impl Display) {
+        self.unary_op("push", from);
+        self.depth += 1;
+    }
+
     fn pop(&mut self, to: impl Display) {
         self.unary_op("pop", to);
+        self.depth -= 1;
+    }
+
+    fn and(&mut self, lhs: impl Display, rhs: impl Display) {
+        self.binary_op("and", lhs, rhs);
     }
 
     fn add(&mut self, lhs: impl Display, rhs: impl Display) {
@@ -188,6 +204,7 @@ impl Compiler {
             Expression::ReturnExpr(e) => self.gen_return_expr(e),
             Expression::IfExpr(e) => self.gen_if_expr(e),
             Expression::BlockExpr(e) => self.gen_block_expr(e),
+            Expression::CallExpr(e) => self.gen_call_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -353,6 +370,35 @@ impl Compiler {
     fn gen_block_expr(&mut self, e: &BlockExpr) -> CResult {
         self.gen_statements(&e.statements)?;
         self.push("rax");
+
+        Ok(())
+    }
+
+    fn gen_call_expr(&mut self, e: &CallExpr) -> CResult {
+        match &*e.func {
+            Expression::Ident(func_name) => {
+                for (arg, register) in e.args.iter().zip(X86_64_ARG_REGISTERS.iter()) {
+                    self.gen_expr(arg)?;
+                    self.pop(register);
+                }
+
+                self.mov("rax", 0);
+
+                // rspを16バイト境界に揃える
+                if self.depth % 2 == 0 {
+                    self.call(&func_name.name);
+                } else {
+                    self.sub("rsp", 8);
+                    self.call(&func_name.name);
+                    self.add("rsp", 8);
+                }
+
+                self.push("rax");
+            }
+            _ => {
+                return Err(CompileError::Unimplemented);
+            }
+        }
 
         Ok(())
     }

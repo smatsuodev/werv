@@ -1,4 +1,7 @@
 test:
 		sh ./test.sh
 
-.PHONY: test
+clean:
+		rm -rf tmp/*.o
+
+.PHONY: test clean

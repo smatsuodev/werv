@@ -3,18 +3,22 @@ assert() {
   expected="$1"
   input="$2"
 
-  echo "$input" > tmp.we
-  cargo run --release tmp.we 2> /dev/null > tmp.s
-  cc -o tmp tmp.s
-  ./tmp
+  echo "$input" > tmp/tmp.we
+  cargo run --release tmp/tmp.we 2> /dev/null > tmp/tmp.s
+  cc -o tmp/func.o -c tmp/func.c
+  cc -o tmp/tmp.o -c tmp/tmp.s
+  cc -o tmp/tmp tmp/*.o
+  tmp/tmp
   actual="$?"
 
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
-    cargo run --release tmp.we > tmp.s
-    cc -o tmp tmp.s
-    ./tmp
+    cargo run --release tmp/tmp.we > tmp/tmp.s
+    cc -o tmp/func.o -c tmp/func.c
+    cc -o tmp/tmp.o -c tmp/tmp.s
+    cc -o tmp/tmp tmp/*.o
+    tmp/tmp
     actual="$?"
     echo "$input => $expected expected, but got $actual"
     exit 1
@@ -71,5 +75,9 @@ assert 20 "{10}; 20"
 assert 10 "{return 10;}; 20"
 assert 11 "if 1 { 10; 10 + 1 } else { 20; 10 }"
 assert 10 "if 0 { 10; 10 + 1 } else { 20; 10 }"
+
+assert 0 "print_ok();"
+assert 5 "plus2(2, 3)"
+assert 9 "plus3(2, 3, 4)"
 
 echo OK
