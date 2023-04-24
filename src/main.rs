@@ -16,7 +16,7 @@ fn main() {
                 let mut compiler = wervc::Compiler::new();
 
                 compiler.compile(input).unwrap();
-                println!("{}", compiler.output);
+                println!("{}", compiler.output());
             }
         }
     }

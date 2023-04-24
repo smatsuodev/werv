@@ -78,4 +78,12 @@ assert 14 "plus4(2, 3, 4, 5)"
 assert 20 "plus5(2, 3, 4, 5, 6)"
 assert 27 "plus6(2, 3, 4, 5, 6, 7)"
 
+assert 1 "let one() = 1; one()"
+assert 3 "let id(x) = x; id(3)"
+assert 5 "let add2(a,b) = a+b; add2(2,3)"
+assert 9 "let add3(a,b,c) = a+b+c; add3(2,3,4)"
+assert 14 "let add4(a,b,c,d) = a+b+c+d; add4(2,3,4,5)"
+assert 20 "let add5(a,b,c,d,e) = a+b+c+d+e; add5(2,3,4,5,6)"
+assert 27 "let add6(a,b,c,d,e,f) = a+b+c+d+e+f; add6(2,3,4,5,6,7)"
+
 echo OK

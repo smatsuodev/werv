@@ -4,8 +4,8 @@ use std::fmt::Display;
 
 use error::CompileError;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, Integer, Node, Program,
-    ReturnExpr, Statement, UnaryExpr,
+    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, Node,
+    Program, ReturnExpr, Statement, UnaryExpr,
 };
 use wervc_parser::parser::Parser;
 
@@ -14,25 +14,43 @@ type CResult = Result<(), CompileError>;
 const X86_64_ARG_REGISTERS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
 pub struct Compiler {
-    pub output: String,
+    pub outputs: Vec<String>,
     pub label_count: usize,
     // push/pop によって rsp が変化するので、その変化量を記録しておく
     // これは、関数の prologue/epilogue で rsp を調整するために必要
     pub depth: usize,
+    pub cur_output_index: usize,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         Self {
-            output: String::new(),
+            outputs: vec![String::new()],
             label_count: 0,
             depth: 0,
+            cur_output_index: 0,
         }
     }
 
+    pub fn output(&mut self) -> String {
+        self.outputs.concat()
+    }
+
+    fn add_output(&mut self) {
+        self.outputs.push(String::new());
+    }
+
+    fn change_output_to_end(&mut self) {
+        self.cur_output_index = self.outputs.len() - 1;
+    }
+
+    fn change_output_to_head(&mut self) {
+        self.cur_output_index = 0;
+    }
+
     fn add_code(&mut self, code: impl ToString) {
-        self.output.push_str(code.to_string().as_str());
-        self.output.push('\n');
+        self.outputs[self.cur_output_index].push_str(code.to_string().as_str());
+        self.outputs[self.cur_output_index].push('\n');
     }
 
     fn get_serial_label(&mut self, label: impl Display) -> String {
@@ -155,13 +173,12 @@ impl Compiler {
         } = program;
 
         self.gen_prelude();
-        self.gen_prologue(*total_offset);
+        self.gen_program_prologue(*total_offset);
 
         self.gen_statements(statements)?;
 
-        self.mov("rsp", "rbp");
-        self.pop("rbp");
-        self.ret();
+        self.push("rax");
+        self.gen_epilogue();
 
         Ok(())
     }
@@ -201,6 +218,7 @@ impl Compiler {
             Expression::IfExpr(e) => self.gen_if_expr(e),
             Expression::BlockExpr(e) => self.gen_block_expr(e),
             Expression::CallExpr(e) => self.gen_call_expr(e),
+            Expression::FunctionDefExpr(e) => self.gen_function_def_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -320,7 +338,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_prologue(&mut self, total_offset: isize) {
+    fn gen_program_prologue(&mut self, total_offset: isize) {
         self.push("rbp");
         self.mov("rbp", "rsp");
         self.sub("rsp", total_offset);
@@ -328,10 +346,7 @@ impl Compiler {
 
     fn gen_return_expr(&mut self, e: &ReturnExpr) -> CResult {
         self.gen_expr(&e.value)?;
-        self.pop("rax");
-        self.mov("rsp", "rbp");
-        self.pop("rbp");
-        self.ret();
+        self.gen_epilogue();
 
         Ok(())
     }
@@ -397,6 +412,49 @@ impl Compiler {
         }
 
         Ok(())
+    }
+
+    fn gen_function_def_expr(&mut self, e: &FunctionDefExpr) -> CResult {
+        let func_name = match *e.name {
+            Expression::Ident(ref i) => &i.name,
+            _ => {
+                return Err(CompileError::ExpectedIdent {
+                    actual: *e.name.clone(),
+                });
+            }
+        };
+
+        self.add_output();
+        self.change_output_to_end();
+        self.add_code(format!(".globl {}", func_name));
+        self.gen_label(func_name);
+        self.push("rbp");
+        self.mov("rbp", "rsp");
+
+        for (i, param) in e.params.iter().enumerate() {
+            if let Expression::Ident(param_ident) = param {
+                self.sub("rsp", param_ident.offset - 8);
+                self.push(X86_64_ARG_REGISTERS[i]);
+                self.mov("rsp", "rbp");
+            } else {
+                return Err(CompileError::ExpectedIdent {
+                    actual: param.clone(),
+                });
+            }
+        }
+
+        self.gen_expr(&e.body)?;
+        self.gen_epilogue();
+        self.change_output_to_head();
+
+        Ok(())
+    }
+
+    fn gen_epilogue(&mut self) {
+        self.pop("rax");
+        self.mov("rsp", "rbp");
+        self.pop("rbp");
+        self.ret();
     }
 }
 
