@@ -2,6 +2,8 @@
 
 void print_ok() { printf("OK\n"); }
 
+void putnbr(int n) { printf("%d\n", n); }
+
 int plus2(int a, int b) { return a + b; }
 int plus3(int a, int b, int c) { return a + b + c; }
 int plus4(int a, int b, int c, int d) { return a + b + c + d; }

@@ -1,8 +1,7 @@
 pub mod error;
 
-use std::fmt::Display;
-
 use error::CompileError;
+use std::fmt::Display;
 use wervc_ast::{
     BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, Node,
     Program, ReturnExpr, Statement, UnaryExpr,
@@ -431,8 +430,14 @@ impl Compiler {
         self.push("rbp");
         self.mov("rbp", "rsp");
 
+        let mut max_offset = 0;
+
         for (i, param) in e.params.iter().enumerate() {
             if let Expression::Ident(param_ident) = param {
+                max_offset = max_offset.max(param_ident.offset);
+
+                // パラメータのオフセットを計算
+                // スタックに呼び出し時のrbpを積んだので、その分オフセットをずらす
                 self.sub("rsp", param_ident.offset - 8);
                 self.push(X86_64_ARG_REGISTERS[i]);
                 self.mov("rsp", "rbp");
@@ -443,6 +448,7 @@ impl Compiler {
             }
         }
 
+        self.sub("rsp", max_offset);
         self.gen_expr(&e.body)?;
         self.gen_epilogue();
         self.change_output_to_head();
