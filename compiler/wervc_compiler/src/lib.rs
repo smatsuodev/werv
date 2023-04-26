@@ -132,7 +132,7 @@ impl Compiler {
     }
 
     fn movzb(&mut self, lhs: impl Display, rhs: impl Display) {
-        self.add_code(format!("  movzb {}, {}", lhs, rhs));
+        self.binary_op("movzb", lhs, rhs);
     }
 
     fn je(&mut self, label: impl Display) {
@@ -197,7 +197,6 @@ impl Compiler {
                 self.gen_expr(e)?;
                 self.pop("rax");
                 self.mov("rax", 0);
-                self.push("rax");
             }
             Statement::ExprReturnStmt(e) => {
                 self.gen_expr(e)?;
@@ -387,9 +386,15 @@ impl Compiler {
     fn gen_call_expr(&mut self, e: &CallExpr) -> CResult {
         match &*e.func {
             Expression::Ident(func_name) => {
-                for (arg, register) in e.args.iter().zip(X86_64_ARG_REGISTERS.iter()) {
+                let mut register_num = 0;
+
+                for arg in &e.args {
                     self.gen_expr(arg)?;
-                    self.pop(register);
+                    register_num += 1;
+                }
+
+                for i in 0..register_num {
+                    self.pop(X86_64_ARG_REGISTERS[register_num - i - 1]);
                 }
 
                 self.mov("rax", 0);
@@ -437,7 +442,7 @@ impl Compiler {
                 max_offset = max_offset.max(param_ident.offset);
 
                 // パラメータのオフセットを計算
-                // スタックに呼び出し時のrbpを積んだので、その分オフセットをずらす
+                // 積むデータのサイズ分オフセットをずらす
                 self.sub("rsp", param_ident.offset - 8);
                 self.push(X86_64_ARG_REGISTERS[i]);
                 self.mov("rsp", "rbp");

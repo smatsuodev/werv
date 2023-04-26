@@ -88,6 +88,7 @@ assert 27 "let add6(a,b,c,d,e,f) = a+b+c+d+e+f; add6(2,3,4,5,6,7)"
 assert 0 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(0)"
 assert 1 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(1)"
 assert 55 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(10)"
-# assert 1 "let mod(n, modder) = if n < modder n else mod(n-modder, modder); mod(100001, 2)"
+assert 1 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100001, 2)"
+assert 4 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100004, 5)"
 
 echo OK
