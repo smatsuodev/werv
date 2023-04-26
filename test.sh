@@ -53,6 +53,7 @@ assert 1 'a=1;a'
 assert 2 'a=1;b=2;b'
 assert 1 'a=1;b=2;a'
 assert 3 'a=1;b=2;a+b'
+assert 4 'a=1;a=2;a+a'
 
 assert 6 "foo = 1; bar = 2 + 3; foo + bar"
 
@@ -90,5 +91,10 @@ assert 1 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(1)"
 assert 55 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(10)"
 assert 1 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100001, 2)"
 assert 4 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100004, 5)"
+
+assert 10 "a = 10; b = &a; *b"
+assert 3 "a = 3; b = 5; c = &b + 8; *c"
+assert 10 "a = 10; b = &a; c = &b; d = &c; ***d"
+assert 15 "a = 10; b = &a; c = 5; d = &c; *b+*d"
 
 echo OK

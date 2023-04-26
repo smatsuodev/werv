@@ -4,7 +4,7 @@ use error::CompileError;
 use std::fmt::Display;
 use wervc_ast::{
     BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, Node,
-    Program, ReturnExpr, Statement, UnaryExpr,
+    Program, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
 };
 use wervc_parser::parser::Parser;
 
@@ -299,8 +299,17 @@ impl Compiler {
         self.pop("rax");
 
         match e.kind {
-            wervc_ast::UnaryExprKind::Minus => {
+            UnaryExprKind::Minus => {
                 self.neg("rax");
+            }
+            UnaryExprKind::Addr => {
+                self.gen_left_val(&e.expr)?;
+                return Ok(());
+            }
+            UnaryExprKind::Deref => {
+                self.gen_expr(&e.expr)?;
+                self.pop("rax");
+                self.mov("rax", "[rax]");
             }
             _ => {
                 return Err(CompileError::Unimplemented);

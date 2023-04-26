@@ -555,7 +555,7 @@ fn parse_unary_test() {
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
-            kind: UnaryExprKind::Ref,
+            kind: UnaryExprKind::Addr,
             expr: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
                 offset: 8,
@@ -571,7 +571,7 @@ fn parse_unary_test() {
         Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Deref,
             expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                kind: UnaryExprKind::Ref,
+                kind: UnaryExprKind::Addr,
                 expr: Box::new(Expression::Ident(Ident {
                     name: "p".to_string(),
                     offset: 8,
@@ -601,17 +601,17 @@ fn parse_unary_test() {
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
-            kind: UnaryExprKind::Ref,
+            kind: UnaryExprKind::Addr,
             expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                kind: UnaryExprKind::Ref,
+                kind: UnaryExprKind::Addr,
                 expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                    kind: UnaryExprKind::Ref,
+                    kind: UnaryExprKind::Addr,
                     expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                        kind: UnaryExprKind::Ref,
+                        kind: UnaryExprKind::Addr,
                         expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                            kind: UnaryExprKind::Ref,
+                            kind: UnaryExprKind::Addr,
                             expr: Box::new(Expression::UnaryExpr(UnaryExpr {
-                                kind: UnaryExprKind::Ref,
+                                kind: UnaryExprKind::Addr,
                                 expr: Box::new(Expression::Ident(Ident {
                                     name: "p".to_string(),
                                     offset: 8,

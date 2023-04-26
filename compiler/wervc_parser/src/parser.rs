@@ -330,7 +330,7 @@ impl Parser {
 
         if self.consume(Ampersand) {
             return Ok(Expression::UnaryExpr(UnaryExpr {
-                kind: UnaryExprKind::Ref,
+                kind: UnaryExprKind::Addr,
                 expr: Box::new(self.parse_unary()?),
             }));
         }

@@ -134,7 +134,7 @@ impl Evaluator {
                     return Ok(*value);
                 }
             }
-            UnaryExprKind::Ref => {
+            UnaryExprKind::Addr => {
                 return Ok(Pointer(Box::new(value)));
             }
         }
