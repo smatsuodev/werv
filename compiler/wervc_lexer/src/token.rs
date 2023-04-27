@@ -35,6 +35,7 @@ pub enum TokenKind {
     Gt,
     Ge,
 
+    Colon,
     SemiColon,
     Comma,
 

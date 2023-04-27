@@ -1,6 +1,11 @@
+pub mod ty;
+
+use ty::Type;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
+    pub total_offset: isize,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -24,6 +29,8 @@ pub struct Integer {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
     pub name: String,
+    pub offset: isize,
+    pub ty: Type,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -128,5 +135,5 @@ pub enum UnaryExprKind {
     Minus,
     Not,
     Deref,
-    Ref,
+    Addr,
 }

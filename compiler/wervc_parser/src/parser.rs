@@ -4,6 +4,7 @@ mod test;
 
 use self::error::ParserError;
 use wervc_ast::{
+    ty::{Type, TypeKind},
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
     Expression::{self},
     FunctionDefExpr, Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr,
@@ -21,6 +22,8 @@ use wervc_lexer::{
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
+    local_vars: Vec<Ident>,
+    cur_offset: isize,
 }
 
 type PResult<T> = Result<T, ParserError>;
@@ -31,6 +34,8 @@ impl Parser {
         let mut parser = Parser {
             lexer,
             cur_token: Token::default(),
+            local_vars: Vec::new(),
+            cur_offset: 0,
         };
 
         parser.next_token();
@@ -70,6 +75,43 @@ impl Parser {
         Ok(token)
     }
 
+    fn create_ident(&mut self, ident: &Expression, ty: Type) -> PResult<Expression> {
+        let Expression::Ident(ident) = ident else {
+            return Err(ParserError::UnexpectedExpr(ident.clone()))
+        };
+        let name = ident.name.clone();
+
+        let ident = Ident {
+            name,
+            ty,
+            offset: self.cur_offset + 8,
+        };
+
+        self.cur_offset = ident.offset;
+        self.local_vars.push(ident.clone());
+
+        Ok(Expression::Ident(ident))
+    }
+
+    fn find_ident(&self, ident: &Expression) -> PResult<Expression> {
+        let Expression::Ident(ident) = ident else {
+            return Err(ParserError::UnexpectedExpr(ident.clone()))
+        };
+        let name = ident.name.clone();
+
+        if let Some(ident) = self.local_vars.iter().rev().find_map(|ident| {
+            if ident.name == name {
+                Some(ident)
+            } else {
+                None
+            }
+        }) {
+            Ok(Expression::Ident(ident.clone()))
+        } else {
+            Err(ParserError::UndefinedIdent(name))
+        }
+    }
+
     /// program = stmt*
     pub fn parse_program(&mut self) -> PResult<Node> {
         let mut statements = Vec::new();
@@ -86,7 +128,10 @@ impl Parser {
             statements.push(stmt);
         }
 
-        Ok(Node::Program(Program { statements }))
+        Ok(Node::Program(Program {
+            statements,
+            total_offset: self.cur_offset,
+        }))
     }
 
     /// stmt = expr ';'?
@@ -117,13 +162,21 @@ impl Parser {
         self.parse_assign()
     }
 
-    /// let_expr = 'let' (ident | ident '(' ident,* ')') '=' expr
+    /// let_expr = 'let' (ident ':' type | ident '(' (ident ':' type),* ')') '=' expr
+    /// TODO: シャドーイングの実装
     fn parse_let_expr(&mut self) -> PResult<Expression> {
         self.expect(Let)?;
 
-        let name = Box::new(self.parse_ident()?);
+        let ident = self.parse_ident()?;
 
         if self.consume(LParen) {
+            let name = Box::new(self.create_ident(
+                &ident,
+                Type {
+                    kind: TypeKind::Func,
+                    ptr_to: None,
+                },
+            )?);
             let mut params = Vec::new();
 
             if self.consume(RParen) {
@@ -138,14 +191,24 @@ impl Parser {
                 }));
             }
 
-            let token = self.parse_ident()?;
+            let ident = self.parse_ident()?;
 
-            params.push(token);
+            self.expect(TokenKind::Colon)?;
+
+            let ty = self.parse_type()?;
+            let param = self.create_ident(&ident, ty)?;
+
+            params.push(param);
 
             while self.consume(Comma) {
-                let token = self.parse_ident()?;
+                let ident = self.parse_ident()?;
 
-                params.push(token);
+                self.expect(TokenKind::Colon)?;
+
+                let ty = self.parse_type()?;
+                let param = self.create_ident(&ident, ty)?;
+
+                params.push(param);
             }
 
             self.expect(RParen)?;
@@ -159,6 +222,11 @@ impl Parser {
                 body,
             }));
         }
+
+        self.expect(TokenKind::Colon)?;
+
+        let ty = self.parse_type()?;
+        let name = Box::new(self.create_ident(&ident, ty)?);
 
         self.expect(TokenKind::Assign)?;
 
@@ -321,7 +389,7 @@ impl Parser {
 
         if self.consume(Ampersand) {
             return Ok(Expression::UnaryExpr(UnaryExpr {
-                kind: UnaryExprKind::Ref,
+                kind: UnaryExprKind::Addr,
                 expr: Box::new(self.parse_unary()?),
             }));
         }
@@ -407,7 +475,9 @@ impl Parser {
         }
 
         if self.peek(TokenKind::Ident) {
-            return self.parse_ident();
+            let ident = self.parse_ident()?;
+
+            return self.find_ident(&ident);
         }
 
         self.parse_bool()
@@ -471,9 +541,15 @@ impl Parser {
     /// ident = ([a-zA-Z] | '_') ([a-zA-Z0-9] | '_')*
     fn parse_ident(&mut self) -> PResult<Expression> {
         let token = self.expect(TokenKind::Ident)?;
-        let literal = token.literal;
 
-        Ok(Expression::Ident(Ident { name: literal }))
+        Ok(Expression::Ident(Ident {
+            name: token.literal,
+            ty: Type {
+                kind: TypeKind::Unknown,
+                ptr_to: None,
+            },
+            offset: -1, // offsetは後から入れておくのでありえない値を入れとく
+        }))
     }
 
     /// bool = 'true' | 'false'
@@ -485,5 +561,28 @@ impl Parser {
         self.expect(False)?;
 
         Ok(Expression::Boolean(Boolean { value: false }))
+    }
+
+    fn parse_type(&mut self) -> PResult<Type> {
+        let mut ptr_cnt = 0;
+
+        while self.consume(TokenKind::Asterisk) {
+            ptr_cnt += 1;
+        }
+
+        let type_name = self.expect(TokenKind::Ident)?.literal;
+        let mut ty = Type {
+            kind: TypeKind::from(type_name),
+            ptr_to: None,
+        };
+
+        for _ in 0..ptr_cnt {
+            ty = Type {
+                kind: TypeKind::Ptr,
+                ptr_to: Some(Box::new(ty)),
+            }
+        }
+
+        Ok(ty)
     }
 }

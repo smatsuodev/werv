@@ -51,11 +51,13 @@ fn lexer_arithmetic_test() {
 
 #[test]
 fn lexer_let_expr_test() {
-    let inputs = ["let x = 5;", "let y = 10"];
+    let inputs = ["let x: int = 5;", "let y = 10"];
     let expects = [
         vec![
             (Let, "let"),
             (Ident, "x"),
+            (Colon, ":"),
+            (Ident, "int"),
             (Assign, "="),
             (Number, "5"),
             (SemiColon, ";"),

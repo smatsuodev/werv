@@ -1,10 +1,11 @@
 [package]
-name = "wervc"
+name = "wervc_interpreter"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wervc_compiler = { path = "../wervc_compiler" }
-wervc_interpreter = { path = "../wervc_interpreter" }
+wervc_parser = { path = "../wervc_parser" }
+wervc_object = { path = "../wervc_object" }
+wervc_eval = { path = "../wervc_eval" }

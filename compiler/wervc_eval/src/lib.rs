@@ -134,7 +134,7 @@ impl Evaluator {
                     return Ok(*value);
                 }
             }
-            UnaryExprKind::Ref => {
+            UnaryExprKind::Addr => {
                 return Ok(Pointer(Box::new(value)));
             }
         }
@@ -171,12 +171,12 @@ impl Evaluator {
     }
 
     fn eval_function_def_expr(&mut self, func_def: FunctionDefExpr) -> EResult {
-        if let Expression::Ident(Ident { name }) = *func_def.name {
+        if let Expression::Ident(Ident { name, .. }) = *func_def.name {
             let params = func_def
                 .params
                 .iter()
                 .map(|e| match e {
-                    Expression::Ident(Ident { name }) => name.clone(),
+                    Expression::Ident(Ident { name, .. }) => name.clone(),
                     _ => panic!("Unexpected eval error: ident required but got {:?}", e),
                 })
                 .collect();
@@ -271,7 +271,7 @@ impl Evaluator {
     }
 
     fn eval_let_expr(&mut self, let_expr: LetExpr) -> EResult {
-        if let Expression::Ident(Ident { name }) = *let_expr.name {
+        if let Expression::Ident(Ident { name, .. }) = *let_expr.name {
             let value = self.eval_expr(*let_expr.value)?;
 
             if value.is_return() {
@@ -386,7 +386,7 @@ impl Evaluator {
                 return Err(EvalError::UnexpectedObject(rhs));
             }
             BinaryExprKind::Assign => {
-                if let Expression::Ident(Ident { name }) = *binary_expr.lhs {
+                if let Expression::Ident(Ident { name, .. }) = *binary_expr.lhs {
                     self.env
                         .update(name.clone(), rhs.clone())
                         .ok_or_else(|| EvalError::UndefinedVariable(name.clone()))?;
