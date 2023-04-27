@@ -99,7 +99,7 @@ pub struct IndexExpr {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Expression {
+pub enum Expr {
     Integer(Integer),
     Ident(Ident),
     Boolean(Boolean),
@@ -136,4 +136,16 @@ pub enum UnaryExprKind {
     Not,
     Deref,
     Addr,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Expression {
+    pub expr: Expr,
+    pub ty: Type,
+}
+
+impl Expression {
+    pub fn new(expr: Expr, ty: Type) -> Self {
+        Self { expr, ty }
+    }
 }

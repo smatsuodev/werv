@@ -5,7 +5,7 @@ mod test;
 use self::error::ParserError;
 use wervc_ast::{
     ty::{Type, TypeKind},
-    Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
+    Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr, Expr,
     Expression::{self},
     FunctionDefExpr, Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr,
     Statement::{self},
@@ -76,37 +76,41 @@ impl Parser {
     }
 
     fn create_ident(&mut self, ident: &Expression, ty: Type) -> PResult<Expression> {
-        let Expression::Ident(ident) = ident else {
+        let Expr::Ident(ident) = &ident.expr else {
             return Err(ParserError::UnexpectedExpr(ident.clone()))
         };
         let name = ident.name.clone();
 
         let ident = Ident {
             name,
-            ty,
             offset: self.cur_offset + 8,
+            ty,
         };
 
         self.cur_offset = ident.offset;
         self.local_vars.push(ident.clone());
 
-        Ok(Expression::Ident(ident))
+        Ok(Expression::new(Expr::Ident(ident), ty))
     }
 
     fn find_ident(&self, ident: &Expression) -> PResult<Expression> {
-        let Expression::Ident(ident) = ident else {
+        let original_ty = &ident.ty;
+        let Expr::Ident(ident) = &ident.expr else {
             return Err(ParserError::UnexpectedExpr(ident.clone()))
         };
         let name = ident.name.clone();
 
         if let Some(ident) = self.local_vars.iter().rev().find_map(|ident| {
-            if ident.name == name {
-                Some(ident)
+            if ident.name == name && &ident.ty == original_ty {
+                Some(Expression::new(
+                    Expr::Ident(ident.clone()),
+                    ident.ty.clone(),
+                ))
             } else {
                 None
             }
         }) {
-            Ok(Expression::Ident(ident.clone()))
+            Ok(ident)
         } else {
             Err(ParserError::UndefinedIdent(name))
         }
@@ -170,25 +174,17 @@ impl Parser {
         let ident = self.parse_ident()?;
 
         if self.consume(LParen) {
-            let name = Box::new(self.create_ident(
-                &ident,
-                Type {
-                    kind: TypeKind::Func,
-                    ptr_to: None,
-                },
-            )?);
             let mut params = Vec::new();
 
             if self.consume(RParen) {
                 self.expect(Assign)?;
 
                 let body = Box::new(self.parse_expr()?);
+                let return_ty = Box::new(Type::calc_type(&body.expr));
+                let name = Box::new(self.create_ident(&ident, Type::func(return_ty))?);
+                let expr = Expr::FunctionDefExpr(FunctionDefExpr { name, params, body });
 
-                return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
-                    name,
-                    params,
-                    body,
-                }));
+                return Ok(Expression::new(expr, Type::calc_type(&expr)));
             }
 
             let ident = self.parse_ident()?;
@@ -215,12 +211,11 @@ impl Parser {
             self.expect(Assign)?;
 
             let body = Box::new(self.parse_expr()?);
+            let return_ty = Box::new(Type::calc_type(&body.expr));
+            let name = Box::new(self.create_ident(&ident, Type::func(return_ty))?);
+            let expr = Expr::FunctionDefExpr(FunctionDefExpr { name, params, body });
 
-            return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
-                name,
-                params,
-                body,
-            }));
+            return Ok(Expression::new(expr, Type::calc_type(&expr)));
         }
 
         self.expect(TokenKind::Colon)?;
@@ -231,8 +226,9 @@ impl Parser {
         self.expect(TokenKind::Assign)?;
 
         let value = Box::new(self.parse_expr()?);
+        let expr = Expr::LetExpr(LetExpr { name, value });
 
-        Ok(Expression::LetExpr(LetExpr { name, value }))
+        Ok(Expression::new(expr, Type::calc_type(&expr)))
     }
 
     /// if_expr = 'if' expr expr ('else' expr)?
@@ -246,21 +242,24 @@ impl Parser {
         } else {
             None
         };
-
-        Ok(Expression::IfExpr(IfExpr {
+        let expr = Expr::IfExpr(IfExpr {
             condition,
             consequence,
             alternative,
-        }))
+        });
+
+        Ok(Expression::new(expr, Type::calc_type(&expr)))
     }
 
     /// return_expr = 'return' expr
     fn parse_return_expr(&mut self) -> PResult<Expression> {
         self.expect(Return)?;
 
-        Ok(Expression::ReturnExpr(ReturnExpr {
+        let expr = Expr::ReturnExpr(ReturnExpr {
             value: Box::new(self.parse_expr()?),
-        }))
+        });
+
+        Ok(Expression::new(expr, Type::calc_type(&expr)))
     }
 
     /// assign = relation ('=' relation)?
@@ -268,11 +267,13 @@ impl Parser {
         let node = self.parse_relation()?;
 
         if self.consume(TokenKind::Assign) {
-            return Ok(Expression::BinaryExpr(BinaryExpr {
+            let expr = Expr::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Assign,
                 lhs: Box::new(node),
                 rhs: Box::new(self.parse_relation()?),
-            }));
+            });
+
+            return Ok(Expression::new(expr, Type::calc_type(&expr)));
         }
 
         Ok(node)
@@ -284,41 +285,53 @@ impl Parser {
 
         loop {
             if self.consume(TokenKind::Eq) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Eq,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(TokenKind::Ne) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Ne,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(TokenKind::Lt) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Lt,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(TokenKind::Le) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Le,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(TokenKind::Gt) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Gt,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(TokenKind::Ge) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Ge,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_add()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else {
                 return Ok(node);
             }
@@ -331,17 +344,21 @@ impl Parser {
 
         loop {
             if self.consume(Plus) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Add,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_mul()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else if self.consume(Minus) {
-                node = Expression::BinaryExpr(BinaryExpr {
+                let expr = Expr::BinaryExpr(BinaryExpr {
                     kind: BinaryExprKind::Sub,
                     lhs: Box::new(node),
                     rhs: Box::new(self.parse_mul()?),
                 });
+
+                node = Expression::new(expr, Type::calc_type(&expr));
             } else {
                 return Ok(node);
             }
