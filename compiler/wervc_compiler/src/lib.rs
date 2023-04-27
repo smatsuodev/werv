@@ -10,7 +10,22 @@ use wervc_parser::parser::Parser;
 
 type CResult = Result<(), CompileError>;
 
-const X86_64_ARG_REGISTERS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+const X86_64_ARG_REGISTERS: [&str; 6] = ["%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"];
+
+/// アセンブリで数値に$をつけて表示するためのユーティリティ
+trait IntoAssembly: ToString {
+    fn to_asm(&self) -> String {
+        self.to_string()
+    }
+}
+impl IntoAssembly for isize {
+    fn to_asm(&self) -> String {
+        format!("${}", self)
+    }
+}
+impl IntoAssembly for String {}
+impl IntoAssembly for &String {}
+impl IntoAssembly for &str {}
 
 pub struct Compiler {
     pub outputs: Vec<String>,
@@ -72,23 +87,33 @@ impl Compiler {
         self.add_code(format!("{}:", label));
     }
 
-    fn nullary(&mut self, operation: impl Display) {
-        self.add_code(format!("  {}", operation));
+    fn nullary(&mut self, operation: impl IntoAssembly) {
+        self.add_code(format!("  {}", operation.to_asm()));
     }
 
-    fn unary_op(&mut self, operation: impl Display, operand: impl Display) {
-        self.add_code(format!("  {} {}", operation, operand));
+    fn unary_op(&mut self, operation: impl IntoAssembly, operand: impl IntoAssembly) {
+        self.add_code(format!("  {} {}", operation.to_asm(), operand.to_asm()));
     }
 
-    fn binary_op(&mut self, operation: impl Display, lhs: impl Display, rhs: impl Display) {
-        self.add_code(format!("  {} {}, {}", operation, lhs, rhs));
+    fn binary_op(
+        &mut self,
+        operation: impl IntoAssembly,
+        lhs: impl IntoAssembly,
+        rhs: impl IntoAssembly,
+    ) {
+        self.add_code(format!(
+            "  {} {}, {}",
+            operation.to_asm(),
+            lhs.to_asm(),
+            rhs.to_asm()
+        ));
     }
 
-    fn mov(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn mov(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("mov", lhs, rhs);
     }
 
-    fn call(&mut self, name: impl Display) {
+    fn call(&mut self, name: impl IntoAssembly) {
         self.unary_op("call", name);
     }
 
@@ -96,50 +121,50 @@ impl Compiler {
         self.nullary("ret");
     }
 
-    fn push(&mut self, from: impl Display) {
+    fn push(&mut self, from: impl IntoAssembly) {
         self.unary_op("push", from);
         self.depth += 1;
     }
 
-    fn pop(&mut self, to: impl Display) {
+    fn pop(&mut self, to: impl IntoAssembly) {
         self.unary_op("pop", to);
         self.depth -= 1;
     }
 
-    fn add(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn add(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("add", lhs, rhs);
     }
 
-    fn sub(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn sub(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("sub", lhs, rhs);
     }
 
-    fn imul(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn imul(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("imul", lhs, rhs);
     }
 
-    fn idiv(&mut self, value: impl Display) {
+    fn idiv(&mut self, value: impl IntoAssembly) {
         self.nullary("cqo");
         self.unary_op("idiv", value);
     }
 
-    fn neg(&mut self, value: impl Display) {
+    fn neg(&mut self, value: impl IntoAssembly) {
         self.unary_op("neg", value);
     }
 
-    fn cmp(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn cmp(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("cmp", lhs, rhs);
     }
 
-    fn movzb(&mut self, lhs: impl Display, rhs: impl Display) {
+    fn movzb(&mut self, lhs: impl IntoAssembly, rhs: impl IntoAssembly) {
         self.binary_op("movzb", lhs, rhs);
     }
 
-    fn je(&mut self, label: impl Display) {
+    fn je(&mut self, label: impl IntoAssembly) {
         self.unary_op("je", label);
     }
 
-    fn jmp(&mut self, label: impl Display) {
+    fn jmp(&mut self, label: impl IntoAssembly) {
         self.unary_op("jmp", label);
     }
 
@@ -160,7 +185,6 @@ impl Compiler {
     }
 
     fn gen_prelude(&mut self) {
-        self.add_code(".intel_syntax noprefix");
         self.add_code(".globl main");
         self.add_code("main:");
     }
@@ -176,7 +200,7 @@ impl Compiler {
 
         self.gen_statements(statements)?;
 
-        self.push("rax");
+        self.push("%rax");
         self.gen_epilogue();
 
         Ok(())
@@ -185,7 +209,7 @@ impl Compiler {
     fn gen_statements(&mut self, statements: &Vec<Statement>) -> CResult {
         for statement in statements {
             self.gen_statement(statement)?;
-            self.pop("rax");
+            self.pop("%rax");
         }
 
         Ok(())
@@ -195,8 +219,8 @@ impl Compiler {
         match statement {
             Statement::ExprStmt(e) => {
                 self.gen_expr(e)?;
-                self.pop("rax");
-                self.mov("rax", 0);
+                self.pop("%rax");
+                self.mov(0, "%rax");
             }
             Statement::ExprReturnStmt(e) => {
                 self.gen_expr(e)?;
@@ -232,64 +256,64 @@ impl Compiler {
         self.gen_expr(&e.lhs)?;
         self.gen_expr(&e.rhs)?;
 
-        self.pop("rdi");
-        self.pop("rax");
+        self.pop("%rdi");
+        self.pop("%rax");
 
         match e.kind {
             BinaryExprKind::Add => {
-                self.add("rax", "rdi");
+                self.add("%rdi", "%rax");
             }
             BinaryExprKind::Sub => {
-                self.sub("rax", "rdi");
+                self.sub("%rdi", "%rax");
             }
             BinaryExprKind::Mul => {
-                self.imul("rax", "rdi");
+                self.imul("%rdi", "%rax");
             }
             BinaryExprKind::Div => {
-                self.idiv("rdi");
+                self.idiv("%rdi");
             }
             BinaryExprKind::Eq => {
-                self.cmp("rax", "rdi");
-                self.unary_op("sete", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("sete", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Ne => {
-                self.cmp("rax", "rdi");
-                self.unary_op("setne", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("setne", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Ge => {
-                self.cmp("rax", "rdi");
-                self.unary_op("setge", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("setge", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Gt => {
-                self.cmp("rax", "rdi");
-                self.unary_op("setg", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("setg", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Le => {
-                self.cmp("rax", "rdi");
-                self.unary_op("setle", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("setle", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Lt => {
-                self.cmp("rax", "rdi");
-                self.unary_op("setl", "al");
-                self.movzb("rax", "al");
+                self.cmp("%rdi", "%rax");
+                self.unary_op("setl", "%al");
+                self.movzb("%al", "%rax");
             }
             BinaryExprKind::Assign => {
                 self.gen_left_val(&e.lhs)?;
                 self.gen_expr(&e.rhs)?;
 
-                self.pop("rdi");
-                self.pop("rax");
-                self.mov("[rax]", "rdi");
-                self.push("rdi");
+                self.pop("%rdi");
+                self.pop("%rax");
+                self.mov("%rdi", "(%rax)");
+                self.push("%rdi");
             }
         }
 
-        self.push("rax");
+        self.push("%rax");
 
         Ok(())
     }
@@ -297,11 +321,11 @@ impl Compiler {
     fn gen_unary_expr(&mut self, e: &UnaryExpr) -> CResult {
         self.gen_expr(&e.expr)?;
 
-        self.pop("rax");
+        self.pop("%rax");
 
         match e.kind {
             UnaryExprKind::Minus => {
-                self.neg("rax");
+                self.neg("%rax");
             }
             UnaryExprKind::Addr => {
                 self.gen_left_val(&e.expr)?;
@@ -309,15 +333,15 @@ impl Compiler {
             }
             UnaryExprKind::Deref => {
                 self.gen_expr(&e.expr)?;
-                self.pop("rax");
-                self.mov("rax", "[rax]");
+                self.pop("%rax");
+                self.mov("(%rax)", "%rax");
             }
             _ => {
                 return Err(CompileError::Unimplemented);
             }
         }
 
-        self.push("rax");
+        self.push("%rax");
 
         Ok(())
     }
@@ -325,9 +349,9 @@ impl Compiler {
     fn gen_left_val(&mut self, e: &Expression) -> CResult {
         match e {
             Expression::Ident(e) => {
-                self.mov("rax", "rbp");
-                self.sub("rax", e.offset);
-                self.push("rax");
+                self.mov("%rbp", "%rax");
+                self.sub(e.offset, "%rax");
+                self.push("%rax");
             }
             _ => {
                 return Err(CompileError::NotLeftValue);
@@ -339,17 +363,17 @@ impl Compiler {
 
     fn gen_ident(&mut self, e: &Expression) -> CResult {
         self.gen_left_val(e)?;
-        self.pop("rax");
-        self.mov("rax", "[rax]");
-        self.push("rax");
+        self.pop("%rax");
+        self.mov("(%rax)", "%rax");
+        self.push("%rax");
 
         Ok(())
     }
 
     fn gen_program_prologue(&mut self, total_offset: isize) {
-        self.push("rbp");
-        self.mov("rbp", "rsp");
-        self.sub("rsp", total_offset);
+        self.push("%rbp");
+        self.mov("%rsp", "%rbp");
+        self.sub(total_offset, "%rsp");
     }
 
     fn gen_return_expr(&mut self, e: &ReturnExpr) -> CResult {
@@ -361,8 +385,8 @@ impl Compiler {
 
     fn gen_if_expr(&mut self, e: &wervc_ast::IfExpr) -> CResult {
         self.gen_expr(&e.condition)?;
-        self.pop("rax");
-        self.cmp("rax", 0);
+        self.pop("%rax");
+        self.cmp(0, "%rax");
 
         if let Some(alternative) = &e.alternative {
             let else_label = self.get_if_else_label();
@@ -388,7 +412,7 @@ impl Compiler {
 
     fn gen_block_expr(&mut self, e: &BlockExpr) -> CResult {
         self.gen_statements(&e.statements)?;
-        self.push("rax");
+        self.push("%rax");
 
         Ok(())
     }
@@ -407,18 +431,18 @@ impl Compiler {
                     self.pop(X86_64_ARG_REGISTERS[register_num - i - 1]);
                 }
 
-                self.mov("rax", 0);
+                self.mov(0, "%rax");
 
                 // rspを16バイト境界に揃える
                 if self.depth % 2 == 0 {
                     self.call(&func_name.name);
                 } else {
-                    self.sub("rsp", 8);
+                    self.sub(8, "%rsp");
                     self.call(&func_name.name);
-                    self.add("rsp", 8);
+                    self.add(8, "%rsp");
                 }
 
-                self.push("rax");
+                self.push("%rax");
             }
             _ => {
                 return Err(CompileError::Unimplemented);
@@ -442,8 +466,8 @@ impl Compiler {
         self.change_output_to_end();
         self.add_code(format!(".globl {}", func_name));
         self.gen_label(func_name);
-        self.push("rbp");
-        self.mov("rbp", "rsp");
+        self.push("%rbp");
+        self.mov("%rsp", "%rbp");
 
         let mut max_offset = 0;
 
@@ -453,9 +477,9 @@ impl Compiler {
 
                 // パラメータのオフセットを計算
                 // 積むデータのサイズ分オフセットをずらす
-                self.sub("rsp", param_ident.offset - 8);
+                self.sub(param_ident.offset - 8, "%rsp");
                 self.push(X86_64_ARG_REGISTERS[i]);
-                self.mov("rsp", "rbp");
+                self.mov("%rbp", "%rsp");
             } else {
                 return Err(CompileError::ExpectedIdent {
                     actual: param.clone(),
@@ -463,7 +487,7 @@ impl Compiler {
             }
         }
 
-        self.sub("rsp", max_offset);
+        self.sub(max_offset, "%rsp");
         self.gen_expr(&e.body)?;
         self.gen_epilogue();
         self.change_output_to_head();
@@ -472,9 +496,9 @@ impl Compiler {
     }
 
     fn gen_epilogue(&mut self) {
-        self.pop("rax");
-        self.mov("rsp", "rbp");
-        self.pop("rbp");
+        self.pop("%rax");
+        self.mov("%rbp", "%rsp");
+        self.pop("%rbp");
         self.ret();
     }
 
@@ -482,11 +506,11 @@ impl Compiler {
         self.gen_left_val(&e.name)?;
         self.gen_expr(&e.value)?;
 
-        self.pop("rdi");
-        self.pop("rax");
-        self.mov("[rax]", "rdi");
-        self.push("rdi");
-        self.push("rax");
+        self.pop("%rdi");
+        self.pop("%rax");
+        self.mov("%rdi", "(%rax)");
+        self.push("%rdi");
+        self.push("%rax");
 
         Ok(())
     }
