@@ -1,7 +1,15 @@
+use crate::Expression;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Type {
     pub kind: TypeKind,
     pub ptr_to: Option<Box<Type>>,
+}
+
+impl Type {
+    fn add_type(expr: &mut Expression) {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

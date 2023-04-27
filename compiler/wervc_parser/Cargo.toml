@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wervc_lexer = { path = "../wervc_lexer" }
 wervc_ast = { path = "../wervc_ast" }
+wervc_lexer = { path = "../wervc_lexer" }
