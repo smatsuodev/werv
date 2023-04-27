@@ -353,6 +353,12 @@ impl Compiler {
                 self.sub(e.offset, "%rax");
                 self.push("%rax");
             }
+            Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Deref,
+                expr,
+            }) => {
+                self.gen_expr(expr)?;
+            }
             _ => {
                 return Err(CompileError::NotLeftValue);
             }

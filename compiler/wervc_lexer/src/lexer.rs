@@ -90,6 +90,7 @@ impl Lexer {
             '*' => Asterisk,
             '/' => Slash,
             '&' => Ampersand,
+            ':' => Colon,
             ';' => SemiColon,
             ',' => Comma,
             '(' => LParen,

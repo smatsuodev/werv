@@ -1,3 +1,7 @@
+pub mod ty;
+
+use ty::Type;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -26,6 +30,7 @@ pub struct Integer {
 pub struct Ident {
     pub name: String,
     pub offset: isize,
+    pub ty: Type,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

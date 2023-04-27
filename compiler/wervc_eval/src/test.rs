@@ -1,5 +1,8 @@
 use crate::{error::EvalError, EResult, Evaluator};
-use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Ident, Integer};
+use wervc_ast::{
+    ty::{Type, TypeKind},
+    BinaryExpr, BinaryExprKind, Expression, Ident, Integer,
+};
 use wervc_object::Object::{self, *};
 use wervc_parser::parser::Parser;
 
@@ -34,7 +37,7 @@ fn eval_error_test() {
     let inputs = [
         // "x;",
         // "{ x }",
-        "{ let x = 10; x }; x",
+        "{ let x: int = 10; x }; x",
         "10 = 10",
         "if 1 1",
     ];
@@ -70,8 +73,8 @@ fn eval_arithmetic_test() {
         "(1+2)*3",
         "1+2;",
         r"
-        let x = 10;
-        let y = 20;
+        let x: int = 10;
+        let y: int = 20;
         x + y
         ",
         r"
@@ -96,19 +99,19 @@ fn eval_arithmetic_test() {
 #[test]
 fn eval_let_expr_test() {
     let inputs = [
-        "let x = 10;",
-        "let x = 10",
-        "let x = 10; x",
-        "let x = 10; let x = 1; x",
-        "let x = 10; let _123 = x; _123",
-        "let id(x) = x",
-        "let id(x) = x; id(10)",
-        "let add(x, y) = x + y",
-        "let add(x, y) = x + y; add(10, 2)",
+        "let x: int = 10;",
+        "let x: int = 10",
+        "let x: int = 10; x",
+        "let x: int = 10; let x: int = 1; x",
+        "let x: int = 10; let _123: int = x; _123",
+        "let id(x: int) = x",
+        "let id(x: int) = x; id(10)",
+        "let add(x: int, y: int) = x + y",
+        "let add(x: int, y: int) = x + y; add(10, 2)",
         "let one() = 1",
         "let one() = 1; one()",
         r"
-        let fib(n) = {
+        let fib(n: int) = {
             if n == 0 {
                 return 0;
             };
@@ -122,7 +125,7 @@ fn eval_let_expr_test() {
         fib(10)
         ",
         r"
-        let fact(n) = if n == 0 { 1 } else { n * fact(n-1) };
+        let fact(n: int) = if n == 0 { 1 } else { n * fact(n-1) };
         
         fact(10)
         ",
@@ -138,6 +141,10 @@ fn eval_let_expr_test() {
             body: Expression::Ident(Ident {
                 name: "x".to_string(),
                 offset: 16,
+                ty: Type {
+                    kind: TypeKind::Int,
+                    ptr_to: None,
+                },
             }),
         },
         Integer(10),
@@ -148,10 +155,18 @@ fn eval_let_expr_test() {
                 lhs: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
                     offset: 16,
+                    ty: Type {
+                        kind: TypeKind::Int,
+                        ptr_to: None,
+                    },
                 })),
                 rhs: Box::new(Expression::Ident(Ident {
                     name: "y".to_string(),
                     offset: 24,
+                    ty: Type {
+                        kind: TypeKind::Int,
+                        ptr_to: None,
+                    },
                 })),
             }),
         },
@@ -173,9 +188,9 @@ fn eval_block_expr_test() {
     let inputs = [
         "{ 10 }",
         "{ 10; }",
-        "{ let x = 10; x }",
-        "let x = 10; { x }",
-        "let x = 10; { let y = { x }; y }",
+        "{ let x: int = 10; x }",
+        "let x: int = 10; { x }",
+        "let x: int = 10; { let y: int = { x }; y }",
     ];
     let expects = [Integer(10), Unit, Integer(10), Integer(10), Integer(10)];
 
@@ -185,9 +200,9 @@ fn eval_block_expr_test() {
 #[test]
 fn eval_assign_expr_test() {
     let inputs = [
-        "let x = 10; x = 20; x",
-        "let x = 10; { x = 20; x }",
-        "let x = 10; { x = 20; }; x",
+        "let x: int = 10; x = 20; x",
+        "let x: int = 10; { x = 20; x }",
+        "let x: int = 10; { x = 20; }; x",
     ];
     let expects = [Integer(20), Integer(20), Integer(20)];
 
@@ -197,9 +212,9 @@ fn eval_assign_expr_test() {
 #[test]
 fn eval_call_expr_test() {
     let inputs = [
-        "let print(x) = 0;print(10);",
-        "let println(x) = 0;println(20);",
-        "let print(x) = 0; let x = 10; print(x);",
+        "let print(x: int) = 0;print(10);",
+        "let println(x: int) = 0;println(20);",
+        "let print(x: int) = 0; let x: int = 10; print(x);",
     ];
     let expects = [Unit, Unit, Unit];
 
@@ -213,22 +228,22 @@ fn eval_if_expr_test() {
         "if false 10",
         "if true { 10 } else { 20 }",
         "if false { 10 } else { 20 }",
-        "let x = 10; if x == 10 { 20 } else { 30 }",
-        "let x = 10; if x == 20 { 20 } else { 30 }",
-        "let x = 10; if x < 20 { 20 } else { 30 }",
-        "let x = 10; if x > 20 { 20 } else { 30 }",
-        "let x = 10; if x <= 20 { 20 } else { 30 }",
-        "let x = 10; if x >= 20 { 20 } else { 30 }",
-        "let x = 10; if x != 20 { 20 } else { 30 }",
-        "let x = 10; if x != 10 { 20 } else { 30 }",
-        "let x = 10; if x == 10 { 20 }",
-        "let x = 10; if x == 20 { 20 }",
-        "let x = 10; if x < 20 { 20 }",
-        "let x = 10; if x > 20 { 20 }",
-        "let x = 10; if x <= 20 { 20 }",
-        "let x = 10; if x >= 20 { 20 }",
-        "let x = 10; if x != 20 { 20 }",
-        "let x = 10; if x != 10 { 20 }",
+        "let x: int = 10; if x == 10 { 20 } else { 30 }",
+        "let x: int = 10; if x == 20 { 20 } else { 30 }",
+        "let x: int = 10; if x < 20 { 20 } else { 30 }",
+        "let x: int = 10; if x > 20 { 20 } else { 30 }",
+        "let x: int = 10; if x <= 20 { 20 } else { 30 }",
+        "let x: int = 10; if x >= 20 { 20 } else { 30 }",
+        "let x: int = 10; if x != 20 { 20 } else { 30 }",
+        "let x: int = 10; if x != 10 { 20 } else { 30 }",
+        "let x: int = 10; if x == 10 { 20 }",
+        "let x: int = 10; if x == 20 { 20 }",
+        "let x: int = 10; if x < 20 { 20 }",
+        "let x: int = 10; if x > 20 { 20 }",
+        "let x: int = 10; if x <= 20 { 20 }",
+        "let x: int = 10; if x >= 20 { 20 }",
+        "let x: int = 10; if x != 20 { 20 }",
+        "let x: int = 10; if x != 10 { 20 }",
     ];
     let expects = [
         Integer(10),
@@ -260,7 +275,7 @@ fn eval_if_expr_test() {
 fn eval_return_expr_test() {
     let inputs = [
         "return 10",
-        "let id(x) = { return x; }; id(10)",
+        "let id(x: int) = { return x; }; id(10)",
         "(return 10) + 10",
         "if true { return 10 }; 20",
         "return 20; return 23;",
@@ -308,12 +323,12 @@ fn eval_index_test() {
         "[1, 2, 3][-1]",
         "[1, 2, 3][-2]",
         "[1, 2, 3][-3]",
-        "let x = [1, 2, 3]; x[0]",
-        "let x = [1, 2, 3]; x[1]",
-        "let x = [1, 2, 3]; x[2]",
-        "let x = [1, 2, 3]; x[-1]",
-        "let x = [1, 2, 3]; x[-2]",
-        "let x = [1, 2, 3]; x[-3]",
+        "let x: *int = [1, 2, 3]; x[0]",
+        "let x: *int = [1, 2, 3]; x[1]",
+        "let x: *int = [1, 2, 3]; x[2]",
+        "let x: *int = [1, 2, 3]; x[-1]",
+        "let x: *int = [1, 2, 3]; x[-2]",
+        "let x: *int = [1, 2, 3]; x[-3]",
         "[[1,2],[3,4]][0][0]",
     ];
     let expects = [
