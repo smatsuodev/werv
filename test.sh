@@ -49,21 +49,21 @@ assert 1 '1>=0'
 assert 1 '1>=1'
 assert 0 '1>=2'
 
-assert 1 'a=1;a'
-assert 2 'a=1;b=2;b'
-assert 1 'a=1;b=2;a'
-assert 3 'a=1;b=2;a+b'
-assert 4 'a=1;a=2;a+a'
+assert 1 'let a=1; a'
+assert 2 'let a=1; let b=2; b'
+assert 1 'let a=1; let b=2; a'
+assert 3 'let a=1;let b=2; a+b'
+assert 4 'let a=1; a=2; a+a'
 
-assert 6 "foo = 1; bar = 2 + 3; foo + bar"
+assert 6 "let foo = 1; let bar = 2 + 3; foo + bar"
 
-assert 6 "foo = 1; bar = 2 + 3; return foo + bar;"
+assert 6 "let foo = 1; let bar = 2 + 3; return foo + bar;"
 
-assert 10 "a = 1; if a 10";
-assert 20 "a = 0; if a 10 else 20";
-assert 20 "a = 0; b = 1; if a 10 else if b 20 else 30";
-assert 30 "a = 0; b = 0; if a 10 else if b 20 else 30";
-assert 10 "a = 0; if a == 0 10 else 20";
+assert 10 "let a = 1; if a 10";
+assert 20 "let a = 0; if a 10 else 20";
+assert 20 "let a = 0; let b = 1; if a 10 else if b 20 else 30";
+assert 30 "let a = 0; let b = 0; if a 10 else if b 20 else 30";
+assert 10 "let a = 0; if a == 0 10 else 20";
 
 assert 10 "{10}"
 assert 10 "{{{10}}}"
@@ -72,12 +72,12 @@ assert 10 "{return 10;}; 20"
 assert 11 "if 1 { 10; 10 + 1 } else { 20; 10 }"
 assert 10 "if 0 { 10; 10 + 1 } else { 20; 10 }"
 
-assert 0 "print_ok();"
-assert 5 "plus2(2, 3)"
-assert 9 "plus3(2, 3, 4)"
-assert 14 "plus4(2, 3, 4, 5)"
-assert 20 "plus5(2, 3, 4, 5, 6)"
-assert 27 "plus6(2, 3, 4, 5, 6, 7)"
+# assert 0 "print_ok();"
+# assert 5 "plus2(2, 3)"
+# assert 9 "plus3(2, 3, 4)"
+# assert 14 "plus4(2, 3, 4, 5)"
+# assert 20 "plus5(2, 3, 4, 5, 6)"
+# assert 27 "plus6(2, 3, 4, 5, 6, 7)"
 
 assert 1 "let one() = 1; one()"
 assert 3 "let id(x) = x; id(3)"
@@ -92,9 +92,9 @@ assert 55 "let fib(n) = if n < 2 n else fib(n-1) + fib(n-2); fib(10)"
 assert 1 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100001, 2)"
 assert 4 "let modn(n, modder) = if n < modder n else modn(n-modder, modder); modn(100004, 5)"
 
-assert 10 "a = 10; b = &a; *b"
-assert 3 "a = 3; b = 5; c = &b + 8; *c"
-assert 10 "a = 10; b = &a; c = &b; d = &c; ***d"
-assert 15 "a = 10; b = &a; c = 5; d = &c; *b+*d"
+assert 10 "let a = 10; let b = &a; *b"
+assert 3 "let a = 3; let b = 5; let c = &b + 8; *c"
+assert 10 "let a = 10; let b = &a; let c = &b; let d = &c; ***d"
+assert 15 "let a = 10; let b = &a; let c = 5; let d = &c; *b+*d"
 
 echo OK

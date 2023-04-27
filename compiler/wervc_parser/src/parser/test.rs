@@ -111,6 +111,7 @@ fn parse_stmt_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("x".to_string(), 8)];
         assert_eq!(expect, parser.parse_stmt().unwrap())
     });
 }
@@ -163,6 +164,7 @@ fn parse_binary_expr_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("x".to_string(), 8), ("y".to_string(), 16)];
         assert_eq!(expect, parser.parse_expr().unwrap())
     });
 }
@@ -171,8 +173,8 @@ fn parse_binary_expr_test() {
 fn parse_let_expr() {
     let inputs = [
         "let x = 1 + 2",
-        "let foo_bar = x",
-        "let _123 = _4567890",
+        "let foo_bar = 1",
+        "let _123 = 1",
         "let id(x) = x",
         "let add(x, y) = x + y",
         "let zero() = 0",
@@ -194,20 +196,14 @@ fn parse_let_expr() {
                 name: "foo_bar".to_string(),
                 offset: 8,
             })),
-            value: Box::new(Expression::Ident(Ident {
-                name: "x".to_string(),
-                offset: 16,
-            })),
+            value: Box::new(Expression::Integer(Integer { value: 1 })),
         }),
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "_123".to_string(),
                 offset: 8,
             })),
-            value: Box::new(Expression::Ident(Ident {
-                name: "_4567890".to_string(),
-                offset: 16,
-            })),
+            value: Box::new(Expression::Integer(Integer { value: 1 })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
@@ -372,6 +368,7 @@ fn parse_assign_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("x".to_string(), 8), ("y".to_string(), 16)];
         assert_eq!(expect, parser.parse_assign().unwrap())
     });
 }
@@ -401,6 +398,7 @@ fn parse_call_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("foo".to_string(), 8)];
         assert_eq!(expect, parser.parse_call().unwrap())
     });
 }
@@ -625,6 +623,7 @@ fn parse_unary_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("x".to_string(), 8), ("p".to_string(), 8)];
         assert_eq!(expect, parser.parse_unary().unwrap())
     });
 }
@@ -694,6 +693,7 @@ fn parse_index_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
+        parser.local_vars = vec![("array".to_string(), 8)];
         assert_eq!(expect, parser.parse_index().unwrap())
     });
 }

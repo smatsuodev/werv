@@ -3,8 +3,8 @@ pub mod error;
 use error::CompileError;
 use std::fmt::Display;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, Node,
-    Program, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
+    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, LetExpr,
+    Node, Program, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
 };
 use wervc_parser::parser::Parser;
 
@@ -217,6 +217,7 @@ impl Compiler {
             Expression::BlockExpr(e) => self.gen_block_expr(e),
             Expression::CallExpr(e) => self.gen_call_expr(e),
             Expression::FunctionDefExpr(e) => self.gen_function_def_expr(e),
+            Expression::LetExpr(e) => self.gen_let_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -475,6 +476,19 @@ impl Compiler {
         self.mov("rsp", "rbp");
         self.pop("rbp");
         self.ret();
+    }
+
+    fn gen_let_expr(&mut self, e: &LetExpr) -> CResult {
+        self.gen_left_val(&e.name)?;
+        self.gen_expr(&e.value)?;
+
+        self.pop("rdi");
+        self.pop("rax");
+        self.mov("[rax]", "rdi");
+        self.push("rdi");
+        self.push("rax");
+
+        Ok(())
     }
 }
 

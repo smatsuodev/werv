@@ -2,8 +2,6 @@ pub mod error;
 #[cfg(test)]
 mod test;
 
-use std::collections::HashMap;
-
 use self::error::ParserError;
 use wervc_ast::{
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
@@ -23,7 +21,7 @@ use wervc_lexer::{
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
-    local_vars: HashMap<String, Ident>,
+    local_vars: Vec<(String, isize)>, // (name, offset)
     cur_offset: isize,
 }
 
@@ -35,7 +33,7 @@ impl Parser {
         let mut parser = Parser {
             lexer,
             cur_token: Token::default(),
-            local_vars: HashMap::new(),
+            local_vars: Vec::new(),
             cur_offset: 0,
         };
 
@@ -74,6 +72,50 @@ impl Parser {
         self.next_token();
 
         Ok(token)
+    }
+
+    fn find_offset(&self, name: &str) -> Option<isize> {
+        self.local_vars.iter().rev().find_map(
+            |(n, offset)| {
+                if n == name {
+                    Some(*offset)
+                } else {
+                    None
+                }
+            },
+        )
+    }
+
+    fn create_ident(&mut self, ident: &Expression) -> PResult<Expression> {
+        let Expression::Ident(ident) = ident else {
+            return Err(ParserError::UnexpectedExpr(ident.clone()))
+        };
+        let name = ident.name.clone();
+
+        let ident = Ident {
+            name,
+            offset: self.cur_offset + 8,
+        };
+
+        self.cur_offset = ident.offset;
+        self.local_vars.push((ident.name.clone(), ident.offset));
+
+        Ok(Expression::Ident(ident))
+    }
+
+    fn find_ident(&self, ident: &Expression) -> PResult<Expression> {
+        let Expression::Ident(ident) = ident else {
+            return Err(ParserError::UnexpectedExpr(ident.clone()))
+        };
+        let name = ident.name.clone();
+
+        if let Some(offset) = self.find_offset(&name) {
+            let ident = Ident { name, offset };
+
+            Ok(Expression::Ident(ident))
+        } else {
+            Err(ParserError::UndefinedIdent(name))
+        }
     }
 
     /// program = stmt*
@@ -127,10 +169,12 @@ impl Parser {
     }
 
     /// let_expr = 'let' (ident | ident '(' ident,* ')') '=' expr
+    /// TODO: シャドーイングの実装
     fn parse_let_expr(&mut self) -> PResult<Expression> {
         self.expect(Let)?;
 
-        let name = Box::new(self.parse_ident()?);
+        let ident = self.parse_ident()?;
+        let name = Box::new(self.create_ident(&ident)?);
 
         if self.consume(LParen) {
             let mut params = Vec::new();
@@ -147,14 +191,16 @@ impl Parser {
                 }));
             }
 
-            let token = self.parse_ident()?;
+            let ident = self.parse_ident()?;
+            let param = self.create_ident(&ident)?;
 
-            params.push(token);
+            params.push(param);
 
             while self.consume(Comma) {
-                let token = self.parse_ident()?;
+                let ident = self.parse_ident()?;
+                let param = self.create_ident(&ident)?;
 
-                params.push(token);
+                params.push(param);
             }
 
             self.expect(RParen)?;
@@ -416,7 +462,9 @@ impl Parser {
         }
 
         if self.peek(TokenKind::Ident) {
-            return self.parse_ident();
+            let ident = self.parse_ident()?;
+
+            return self.find_ident(&ident);
         }
 
         self.parse_bool()
@@ -480,21 +528,11 @@ impl Parser {
     /// ident = ([a-zA-Z] | '_') ([a-zA-Z0-9] | '_')*
     fn parse_ident(&mut self) -> PResult<Expression> {
         let token = self.expect(TokenKind::Ident)?;
-        let name = token.literal;
 
-        if let Some(ident) = self.local_vars.get(&name) {
-            return Ok(Expression::Ident(ident.clone()));
-        }
-
-        let ident = Ident {
-            name,
-            offset: self.cur_offset + 8,
-        };
-
-        self.local_vars.insert(ident.name.clone(), ident.clone());
-        self.cur_offset = ident.offset;
-
-        Ok(Expression::Ident(ident))
+        Ok(Expression::Ident(Ident {
+            name: token.literal,
+            offset: -1, // offsetは後から入れておくのでありえない値を入れとく
+        }))
     }
 
     /// bool = 'true' | 'false'
