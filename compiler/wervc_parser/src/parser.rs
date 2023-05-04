@@ -99,13 +99,12 @@ impl Parser {
         };
         let name = ident.name.clone();
 
-        if let Some(ident) = self.local_vars.iter().rev().find_map(|ident| {
-            if ident.name == name {
-                Some(ident)
-            } else {
-                None
-            }
-        }) {
+        if let Some(ident) = self
+            .local_vars
+            .iter()
+            .rev()
+            .find(|ident| ident.name == name)
+        {
             Ok(Expression::Ident(ident.clone()))
         } else {
             Err(ParserError::UndefinedIdent(name))
