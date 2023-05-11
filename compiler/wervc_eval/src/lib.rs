@@ -15,6 +15,10 @@ use wervc_ast::{
 use wervc_object::Object::{self, *};
 
 type EResult = Result<Object, EvalError>;
+/// 式の種類を必要とする型に対して与える型
+///
+/// TODO: あとで型付きの式に置き換える
+type Expr = Expression;
 
 pub struct Evaluator {
     env: Environment,
@@ -40,7 +44,7 @@ impl Evaluator {
         self.env.set_outer(outer);
     }
 
-    pub fn eval(&mut self, node: Node) -> EResult {
+    pub fn eval(&mut self, node: Node<Expr>) -> EResult {
         match node {
             Node::Program(program) => {
                 let value = self.eval_stmts(program.statements)?;
@@ -56,7 +60,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_stmts(&mut self, stmts: Vec<Statement>) -> EResult {
+    fn eval_stmts(&mut self, stmts: Vec<Statement<Expr>>) -> EResult {
         let mut result = Unit;
 
         for stmt in stmts {
@@ -72,7 +76,7 @@ impl Evaluator {
         Ok(result)
     }
 
-    fn eval_stmt(&mut self, stmt: Statement) -> EResult {
+    fn eval_stmt(&mut self, stmt: Statement<Expr>) -> EResult {
         match stmt {
             Statement::ExprStmt(e) => {
                 let value = self.eval_expr(e)?;
@@ -105,7 +109,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_array(&mut self, array: Array) -> EResult {
+    fn eval_array(&mut self, array: Array<Expr>) -> EResult {
         let mut result = Vec::new();
 
         for element in array.elements {
@@ -115,7 +119,7 @@ impl Evaluator {
         Ok(Array(result))
     }
 
-    fn eval_unary_expr(&mut self, unary: UnaryExpr) -> EResult {
+    fn eval_unary_expr(&mut self, unary: UnaryExpr<Expr>) -> EResult {
         let value = self.eval_expr(*unary.expr)?;
 
         match unary.kind {
@@ -142,7 +146,7 @@ impl Evaluator {
         Err(EvalError::UnexpectedObject(value))
     }
 
-    fn eval_return_expr(&mut self, return_expr: ReturnExpr) -> EResult {
+    fn eval_return_expr(&mut self, return_expr: ReturnExpr<Expr>) -> EResult {
         Ok(Return(Box::new(self.eval_expr(*return_expr.value)?)))
     }
 
@@ -150,7 +154,7 @@ impl Evaluator {
         Ok(Boolean(boolean.value))
     }
 
-    fn eval_if_expr(&mut self, if_expr: IfExpr) -> EResult {
+    fn eval_if_expr(&mut self, if_expr: IfExpr<Expr>) -> EResult {
         let condition = self.eval_expr(*if_expr.condition)?;
 
         if condition.is_return() {
@@ -170,13 +174,13 @@ impl Evaluator {
         Err(EvalError::UnexpectedObject(condition))
     }
 
-    fn eval_function_def_expr(&mut self, func_def: FunctionDefExpr) -> EResult {
+    fn eval_function_def_expr(&mut self, func_def: FunctionDefExpr<Expr>) -> EResult {
         if let Expression::Ident(Ident { name, .. }) = *func_def.name {
             let params = func_def
                 .params
                 .iter()
                 .map(|e| match e {
-                    Expression::Ident(Ident { name, .. }) => name.clone(),
+                    (Expression::Ident(Ident { name, .. }), _) => name.clone(),
                     _ => panic!("Unexpected eval error: ident required but got {:?}", e),
                 })
                 .collect();
@@ -196,7 +200,7 @@ impl Evaluator {
         )
     }
 
-    fn eval_call_expr(&mut self, CallExpr { func, args }: CallExpr) -> EResult {
+    fn eval_call_expr(&mut self, CallExpr { func, args }: CallExpr<Expr>) -> EResult {
         if is_builtin(&func) {
             let mut objects = Vec::new();
 
@@ -255,7 +259,7 @@ impl Evaluator {
         Err(EvalError::UnexpectedObject(func))
     }
 
-    fn eval_block_expr(&mut self, block_expr: BlockExpr) -> EResult {
+    fn eval_block_expr(&mut self, block_expr: BlockExpr<Expr>) -> EResult {
         // 内側のスコープ用に評価器を生成
         let mut inner = Evaluator::new();
 
@@ -270,7 +274,7 @@ impl Evaluator {
         Ok(result)
     }
 
-    fn eval_let_expr(&mut self, let_expr: LetExpr) -> EResult {
+    fn eval_let_expr(&mut self, let_expr: LetExpr<Expr>) -> EResult {
         if let Expression::Ident(Ident { name, .. }) = *let_expr.name {
             let value = self.eval_expr(*let_expr.value)?;
 
@@ -297,7 +301,7 @@ impl Evaluator {
         Err(EvalError::UndefinedVariable(ident.name))
     }
 
-    fn eval_binary_expr(&mut self, binary_expr: BinaryExpr) -> EResult {
+    fn eval_binary_expr(&mut self, binary_expr: BinaryExpr<Expr>) -> EResult {
         let lhs = self.eval_expr(*binary_expr.lhs.clone())?;
 
         if lhs.is_return() {
@@ -407,7 +411,7 @@ impl Evaluator {
         Ok(Integer(integer.value))
     }
 
-    fn eval_index_expr(&mut self, index_expr: IndexExpr) -> Result<Object, EvalError> {
+    fn eval_index_expr(&mut self, index_expr: IndexExpr<Expr>) -> Result<Object, EvalError> {
         let array = self.eval_expr(*index_expr.array)?;
         let index = self.eval_expr(*index_expr.index)?;
 

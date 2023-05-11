@@ -1,8 +1,5 @@
 use crate::{error::EvalError, EResult, Evaluator};
-use wervc_ast::{
-    ty::{Type, TypeKind},
-    BinaryExpr, BinaryExprKind, Expression, Ident, Integer,
-};
+use wervc_ast::{BinaryExpr, BinaryExprKind, Expression, Ident, Integer};
 use wervc_object::Object::{self, *};
 use wervc_parser::parser::Parser;
 
@@ -140,11 +137,7 @@ fn eval_let_expr_test() {
             params: vec!["x".to_string()],
             body: Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             }),
         },
         Integer(10),
@@ -154,19 +147,11 @@ fn eval_let_expr_test() {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
-                    offset: 16,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
                 rhs: Box::new(Expression::Ident(Ident {
                     name: "y".to_string(),
-                    offset: 24,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
             }),
         },

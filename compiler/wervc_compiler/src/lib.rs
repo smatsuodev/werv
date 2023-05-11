@@ -3,12 +3,16 @@ pub mod error;
 use error::CompileError;
 use std::fmt::Display;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, Expression, FunctionDefExpr, Integer, LetExpr,
-    Node, Program, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
+    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, FunctionDefExpr, Integer, LetExpr, Program,
+    ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
 };
 use wervc_parser::parser::Parser;
+use wervc_type::{TypedExpression, TypedExpressionKind, TypedNode};
 
 type CResult = Result<(), CompileError>;
+
+/// 式の種類を必要とする型に対して与える型
+type Expr = TypedExpression;
 
 const X86_64_ARG_REGISTERS: [&str; 6] = ["%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"];
 
@@ -34,6 +38,7 @@ pub struct Compiler {
     // これは、関数の prologue/epilogue で rsp を調整するために必要
     pub depth: usize,
     pub cur_output_index: usize,
+    pub total_stack_size: isize,
 }
 
 impl Compiler {
@@ -43,6 +48,7 @@ impl Compiler {
             label_count: 0,
             depth: 0,
             cur_output_index: 0,
+            total_stack_size: 0,
         }
     }
 
@@ -169,44 +175,58 @@ impl Compiler {
     }
 
     pub fn compile(&mut self, program: impl ToString) -> CResult {
-        let program = Parser::new(program)
-            .parse_program()
-            .map_err(CompileError::ParserError)?;
+        let mut program = TypedNode::from(
+            Parser::new(program)
+                .parse_program()
+                .map_err(CompileError::ParserError)?,
+        );
+
+        let (_, resolver) = program
+            .resolve_type()
+            .map_err(CompileError::TypeCheckError)?;
         let program = match program {
-            Node::Program(p) => p,
+            TypedNode::Program(p) => p,
             _ => {
                 return Err(CompileError::InputIsNotProgram);
             }
         };
 
+        self.total_stack_size = resolver.cur_offset;
         self.gen_program(&program)?;
 
         Ok(())
     }
 
-    fn gen_prelude(&mut self) {
-        self.add_code(".globl main");
-        self.add_code("main:");
-    }
-
-    fn gen_program(&mut self, program: &Program) -> CResult {
-        let Program {
-            statements,
-            total_offset,
-        } = program;
-
-        self.gen_prelude();
-        self.gen_program_prologue(*total_offset);
+    fn gen_program(&mut self, program: &Program<Expr>) -> CResult {
+        let Program { statements } = program;
+        // eprintln!("{:#?}", statements);
 
         self.gen_statements(statements)?;
 
         self.push("%rax");
         self.gen_epilogue();
 
+        self.gen_program_prologue();
+
         Ok(())
     }
 
-    fn gen_statements(&mut self, statements: &Vec<Statement>) -> CResult {
+    fn gen_program_prologue(&mut self) {
+        let mut outputs = vec![String::new()];
+
+        outputs.append(&mut self.outputs);
+        self.outputs = outputs;
+
+        self.change_output_to_head();
+
+        self.add_code(".globl main");
+        self.add_code("main:");
+        self.push("%rbp");
+        self.mov("%rsp", "%rbp");
+        self.sub(self.total_stack_size, "%rsp");
+    }
+
+    fn gen_statements(&mut self, statements: &Vec<Statement<Expr>>) -> CResult {
         for statement in statements {
             self.gen_statement(statement)?;
             self.pop("%rax");
@@ -215,7 +235,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_statement(&mut self, statement: &Statement) -> CResult {
+    fn gen_statement(&mut self, statement: &Statement<Expr>) -> CResult {
         match statement {
             Statement::ExprStmt(e) => {
                 self.gen_expr(e)?;
@@ -230,18 +250,18 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_expr(&mut self, e: &Expression) -> CResult {
-        match e {
-            Expression::Integer(e) => self.gen_integer(e),
-            Expression::BinaryExpr(e) => self.gen_binary_expr(e),
-            Expression::UnaryExpr(e) => self.gen_unary_expr(e),
-            Expression::Ident(_) => self.gen_ident(e),
-            Expression::ReturnExpr(e) => self.gen_return_expr(e),
-            Expression::IfExpr(e) => self.gen_if_expr(e),
-            Expression::BlockExpr(e) => self.gen_block_expr(e),
-            Expression::CallExpr(e) => self.gen_call_expr(e),
-            Expression::FunctionDefExpr(e) => self.gen_function_def_expr(e),
-            Expression::LetExpr(e) => self.gen_let_expr(e),
+    fn gen_expr(&mut self, e: &TypedExpression) -> CResult {
+        match &e.kind {
+            TypedExpressionKind::Integer(e) => self.gen_integer(e),
+            TypedExpressionKind::BinaryExpr(e) => self.gen_binary_expr(e),
+            TypedExpressionKind::UnaryExpr(e) => self.gen_unary_expr(e),
+            TypedExpressionKind::Ident(_) => self.gen_ident(e),
+            TypedExpressionKind::ReturnExpr(e) => self.gen_return_expr(e),
+            TypedExpressionKind::IfExpr(e) => self.gen_if_expr(e),
+            TypedExpressionKind::BlockExpr(e) => self.gen_block_expr(e),
+            TypedExpressionKind::CallExpr(e) => self.gen_call_expr(e),
+            TypedExpressionKind::FunctionDefExpr(e) => self.gen_function_def_expr(e),
+            TypedExpressionKind::LetExpr(e) => self.gen_let_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -252,7 +272,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_binary_expr(&mut self, e: &BinaryExpr) -> CResult {
+    fn gen_binary_expr(&mut self, e: &BinaryExpr<Expr>) -> CResult {
         self.gen_expr(&e.lhs)?;
         self.gen_expr(&e.rhs)?;
 
@@ -318,7 +338,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_unary_expr(&mut self, e: &UnaryExpr) -> CResult {
+    fn gen_unary_expr(&mut self, e: &UnaryExpr<Expr>) -> CResult {
         self.gen_expr(&e.expr)?;
 
         self.pop("%rax");
@@ -346,14 +366,14 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_left_val(&mut self, e: &Expression) -> CResult {
-        match e {
-            Expression::Ident(e) => {
+    fn gen_left_val(&mut self, e: &TypedExpression) -> CResult {
+        match &e.kind {
+            TypedExpressionKind::Ident(e) => {
                 self.mov("%rbp", "%rax");
                 self.sub(e.offset, "%rax");
                 self.push("%rax");
             }
-            Expression::UnaryExpr(UnaryExpr {
+            TypedExpressionKind::UnaryExpr(UnaryExpr {
                 kind: UnaryExprKind::Deref,
                 expr,
             }) => {
@@ -367,7 +387,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_ident(&mut self, e: &Expression) -> CResult {
+    fn gen_ident(&mut self, e: &TypedExpression) -> CResult {
         self.gen_left_val(e)?;
         self.pop("%rax");
         self.mov("(%rax)", "%rax");
@@ -376,20 +396,14 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_program_prologue(&mut self, total_offset: isize) {
-        self.push("%rbp");
-        self.mov("%rsp", "%rbp");
-        self.sub(total_offset, "%rsp");
-    }
-
-    fn gen_return_expr(&mut self, e: &ReturnExpr) -> CResult {
+    fn gen_return_expr(&mut self, e: &ReturnExpr<Expr>) -> CResult {
         self.gen_expr(&e.value)?;
         self.gen_epilogue();
 
         Ok(())
     }
 
-    fn gen_if_expr(&mut self, e: &wervc_ast::IfExpr) -> CResult {
+    fn gen_if_expr(&mut self, e: &wervc_ast::IfExpr<Expr>) -> CResult {
         self.gen_expr(&e.condition)?;
         self.pop("%rax");
         self.cmp(0, "%rax");
@@ -416,16 +430,16 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_block_expr(&mut self, e: &BlockExpr) -> CResult {
+    fn gen_block_expr(&mut self, e: &BlockExpr<Expr>) -> CResult {
         self.gen_statements(&e.statements)?;
         self.push("%rax");
 
         Ok(())
     }
 
-    fn gen_call_expr(&mut self, e: &CallExpr) -> CResult {
-        match &*e.func {
-            Expression::Ident(func_name) => {
+    fn gen_call_expr(&mut self, e: &CallExpr<Expr>) -> CResult {
+        match &e.func.kind {
+            TypedExpressionKind::Ident(func_name) => {
                 let mut register_num = 0;
 
                 for arg in &e.args {
@@ -458,9 +472,9 @@ impl Compiler {
         Ok(())
     }
 
-    fn gen_function_def_expr(&mut self, e: &FunctionDefExpr) -> CResult {
-        let func_name = match *e.name {
-            Expression::Ident(ref i) => &i.name,
+    fn gen_function_def_expr(&mut self, e: &FunctionDefExpr<Expr>) -> CResult {
+        let func_name = match e.name.kind {
+            TypedExpressionKind::Ident(ref i) => &i.name,
             _ => {
                 return Err(CompileError::ExpectedIdent {
                     actual: *e.name.clone(),
@@ -477,8 +491,8 @@ impl Compiler {
 
         let mut max_offset = 0;
 
-        for (i, param) in e.params.iter().enumerate() {
-            if let Expression::Ident(param_ident) = param {
+        for (i, (param, _)) in e.params.iter().enumerate() {
+            if let TypedExpressionKind::Ident(param_ident) = &param.kind {
                 max_offset = max_offset.max(param_ident.offset);
 
                 // パラメータのオフセットを計算
@@ -508,7 +522,7 @@ impl Compiler {
         self.ret();
     }
 
-    fn gen_let_expr(&mut self, e: &LetExpr) -> CResult {
+    fn gen_let_expr(&mut self, e: &LetExpr<Expr>) -> CResult {
         self.gen_left_val(&e.name)?;
         self.gen_expr(&e.value)?;
 

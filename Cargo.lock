@@ -35,7 +35,12 @@ version = "0.1.0"
 dependencies = [
  "wervc_ast",
  "wervc_parser",
+ "wervc_type",
 ]
+
+[[package]]
+name = "wervc_environment"
+version = "0.1.0"
 
 [[package]]
 name = "wervc_eval"
@@ -72,4 +77,12 @@ version = "0.1.0"
 dependencies = [
  "wervc_ast",
  "wervc_lexer",
+]
+
+[[package]]
+name = "wervc_type"
+version = "0.1.0"
+dependencies = [
+ "wervc_ast",
+ "wervc_environment",
 ]

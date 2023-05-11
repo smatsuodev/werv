@@ -12,9 +12,10 @@ impl Token {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub enum TokenKind {
     Unknown,
+    #[default]
     EOF,
 
     Number,
@@ -52,12 +53,6 @@ pub enum TokenKind {
     True,
     False,
     Return,
-}
-
-impl Default for TokenKind {
-    fn default() -> Self {
-        TokenKind::EOF
-    }
 }
 
 impl TokenKind {
