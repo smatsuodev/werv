@@ -14,10 +14,12 @@ members = [
     "compiler/wervc",
     "compiler/wervc_ast",
     "compiler/wervc_compiler",
+    "compiler/wervc_environment",
     "compiler/wervc_eval",
     "compiler/wervc_interpreter",
     "compiler/wervc_lexer",
     "compiler/wervc_object",
     "compiler/wervc_parser",
+    "compiler/wervc_type",
     "repl",
 ]

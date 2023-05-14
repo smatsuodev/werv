@@ -1,4 +1,4 @@
-use wervc_ast::Expression;
+use wervc_type::{error::TypeCheckError, TypedExpression};
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -6,5 +6,6 @@ pub enum CompileError {
     ParserError(wervc_parser::parser::error::ParserError),
     InputIsNotProgram,
     NotLeftValue,
-    ExpectedIdent { actual: Expression },
+    ExpectedIdent { actual: TypedExpression },
+    TypeCheckError(TypeCheckError),
 }

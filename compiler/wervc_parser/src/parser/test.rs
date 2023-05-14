@@ -1,8 +1,5 @@
 use super::{error::ParserError, Parser};
-use wervc_ast::{
-    ty::{Type, TypeKind},
-    *,
-};
+use wervc_ast::{ty::Type, *};
 use wervc_lexer::token::TokenKind;
 
 fn loop_assert<T, U, const N: usize>(inputs: [T; N], expects: [U; N], f: impl Fn(&mut Parser, U))
@@ -62,32 +59,26 @@ fn parse_stmt_test() {
         Statement::ExprStmt(Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
             })),
+            ty: Type::int(),
         })),
         Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
             })),
+            ty: Type::int(),
         })),
         Statement::ExprStmt(Expression::BlockExpr(BlockExpr {
             statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
@@ -103,11 +94,7 @@ fn parse_stmt_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -119,11 +106,7 @@ fn parse_stmt_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -136,11 +119,7 @@ fn parse_stmt_test() {
     loop_assert(inputs, expects, |parser, expect| {
         parser.local_vars = vec![Ident {
             name: "x".to_string(),
-            offset: 8,
-            ty: Type {
-                kind: TypeKind::Int,
-                ptr_to: None,
-            },
+            offset: 0,
         }];
         assert_eq!(expect, parser.parse_stmt().unwrap())
     });
@@ -184,19 +163,11 @@ fn parse_binary_expr_test() {
             kind: BinaryExprKind::Add,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::Ident(Ident {
                 name: "y".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
         }),
     ];
@@ -205,19 +176,11 @@ fn parse_binary_expr_test() {
         parser.local_vars = vec![
             Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             },
             Ident {
                 name: "y".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             },
         ];
         assert_eq!(expect, parser.parse_expr().unwrap())
@@ -231,142 +194,105 @@ fn parse_let_expr() {
         "let y: int = 0",
         "let foo_bar: int = 1",
         "let _123: int = 1",
-        "let id(x: int) = x",
-        "let add(x: int, y: int) = x + y",
-        "let zero() = 0",
+        "let id(x: int): int = x",
+        "let add(x: int, y: int): int = x + y",
+        "let zero(): int = 0",
     ];
     let expects = [
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
             })),
+            ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "y".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::Integer(Integer { value: 0 })),
+            ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "foo_bar".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::Integer(Integer { value: 1 })),
+            ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "_123".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             value: Box::new(Expression::Integer(Integer { value: 1 })),
+            ty: Type::int(),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "id".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Func,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
-            params: vec![Expression::Ident(Ident {
-                name: "x".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
-            })],
+            params: vec![(
+                Expression::Ident(Ident {
+                    name: "x".to_string(),
+                    offset: 0,
+                }),
+                Type::int(),
+            )],
+            return_ty: Type::int(),
             body: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "add".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Func,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             params: vec![
-                Expression::Ident(Ident {
-                    name: "x".to_string(),
-                    offset: 16,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
-                }),
-                Expression::Ident(Ident {
-                    name: "y".to_string(),
-                    offset: 24,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
-                }),
+                (
+                    Expression::Ident(Ident {
+                        name: "x".to_string(),
+                        offset: 0,
+                    }),
+                    Type::int(),
+                ),
+                (
+                    Expression::Ident(Ident {
+                        name: "y".to_string(),
+                        offset: 0,
+                    }),
+                    Type::int(),
+                ),
             ],
+            return_ty: Type::int(),
             body: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
-                    offset: 16,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
                 rhs: Box::new(Expression::Ident(Ident {
                     name: "y".to_string(),
-                    offset: 24,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
             })),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
             name: Box::new(Expression::Ident(Ident {
                 name: "zero".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Func,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
-
+            return_ty: Type::int(),
             params: vec![],
             body: Box::new(Expression::Integer(Integer { value: 0 })),
         }),
@@ -397,21 +323,14 @@ fn parse_block_expr() {
                 Statement::ExprStmt(Expression::LetExpr(LetExpr {
                     name: Box::new(Expression::Ident(Ident {
                         name: "x".to_string(),
-                        offset: 8,
-                        ty: Type {
-                            kind: TypeKind::Int,
-                            ptr_to: None,
-                        },
+                        offset: 0,
                     })),
                     value: Box::new(Expression::Integer(Integer { value: 10 })),
+                    ty: Type::int(),
                 })),
                 Statement::ExprReturnStmt(Expression::Ident(Ident {
                     name: "x".to_string(),
-                    offset: 8,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
             ],
         }),
@@ -419,30 +338,24 @@ fn parse_block_expr() {
             statements: vec![Statement::ExprStmt(Expression::LetExpr(LetExpr {
                 name: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
-                    offset: 8,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
                 value: Box::new(Expression::Integer(Integer { value: 10 })),
+                ty: Type::int(),
             }))],
         }),
         Expression::BlockExpr(BlockExpr {
             statements: vec![Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
                 name: Box::new(Expression::Ident(Ident {
                     name: "x".to_string(),
-                    offset: 8,
-                    ty: Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    },
+                    offset: 0,
                 })),
                 value: Box::new(Expression::BlockExpr(BlockExpr {
                     statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
                         value: 10,
                     }))],
                 })),
+                ty: Type::int(),
             }))],
         }),
         Expression::BlockExpr(BlockExpr {
@@ -465,11 +378,7 @@ fn parse_assign_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -481,30 +390,18 @@ fn parse_assign_test() {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::Ident(Ident {
                 name: "y".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
         }),
         Expression::BinaryExpr(BinaryExpr {
             kind: BinaryExprKind::Assign,
             lhs: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             rhs: Box::new(Expression::BlockExpr(BlockExpr {
                 statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
@@ -518,19 +415,11 @@ fn parse_assign_test() {
         parser.local_vars = vec![
             Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             },
             Ident {
                 name: "y".to_string(),
-                offset: 16,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             },
         ];
         assert_eq!(expect, parser.parse_assign().unwrap())
@@ -544,22 +433,14 @@ fn parse_call_test() {
         Expression::CallExpr(CallExpr {
             func: Box::new(Expression::Ident(Ident {
                 name: "foo".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             args: vec![],
         }),
         Expression::CallExpr(CallExpr {
             func: Box::new(Expression::Ident(Ident {
                 name: "foo".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
             args: vec![
                 Expression::Integer(Integer { value: 1 }),
@@ -572,11 +453,7 @@ fn parse_call_test() {
     loop_assert(inputs, expects, |parser, expect| {
         parser.local_vars = vec![Ident {
             name: "foo".to_string(),
-            offset: 8,
-            ty: Type {
-                kind: TypeKind::Int,
-                ptr_to: None,
-            },
+            offset: 0,
         }];
         assert_eq!(expect, parser.parse_call().unwrap())
     });
@@ -735,25 +612,14 @@ fn parse_unary_test() {
             kind: UnaryExprKind::Addr,
             expr: Box::new(Expression::Ident(Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
             kind: UnaryExprKind::Deref,
             expr: Box::new(Expression::Ident(Ident {
                 name: "p".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Ptr,
-                    ptr_to: Some(Box::new(Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    })),
-                },
+                offset: 0,
             })),
         }),
         Expression::UnaryExpr(UnaryExpr {
@@ -762,14 +628,7 @@ fn parse_unary_test() {
                 kind: UnaryExprKind::Addr,
                 expr: Box::new(Expression::Ident(Ident {
                     name: "p".to_string(),
-                    offset: 8,
-                    ty: Type {
-                        kind: TypeKind::Ptr,
-                        ptr_to: Some(Box::new(Type {
-                            kind: TypeKind::Int,
-                            ptr_to: None,
-                        })),
-                    },
+                    offset: 0,
                 })),
             })),
         }),
@@ -787,29 +646,7 @@ fn parse_unary_test() {
                                 kind: UnaryExprKind::Deref,
                                 expr: Box::new(Expression::Ident(Ident {
                                     name: "q".to_string(),
-                                    offset: 8,
-                                    ty: Type {
-                                        kind: TypeKind::Ptr,
-                                        ptr_to: Some(Box::new(Type {
-                                            kind: TypeKind::Ptr,
-                                            ptr_to: Some(Box::new(Type {
-                                                kind: TypeKind::Ptr,
-                                                ptr_to: Some(Box::new(Type {
-                                                    kind: TypeKind::Ptr,
-                                                    ptr_to: Some(Box::new(Type {
-                                                        kind: TypeKind::Ptr,
-                                                        ptr_to: Some(Box::new(Type {
-                                                            kind: TypeKind::Ptr,
-                                                            ptr_to: Some(Box::new(Type {
-                                                                kind: TypeKind::Int,
-                                                                ptr_to: None,
-                                                            })),
-                                                        })),
-                                                    })),
-                                                })),
-                                            })),
-                                        })),
-                                    },
+                                    offset: 0,
                                 })),
                             })),
                         })),
@@ -831,14 +668,7 @@ fn parse_unary_test() {
                                 kind: UnaryExprKind::Addr,
                                 expr: Box::new(Expression::Ident(Ident {
                                     name: "p".to_string(),
-                                    offset: 8,
-                                    ty: Type {
-                                        kind: TypeKind::Ptr,
-                                        ptr_to: Some(Box::new(Type {
-                                            kind: TypeKind::Int,
-                                            ptr_to: None,
-                                        })),
-                                    },
+                                    offset: 0,
                                 })),
                             })),
                         })),
@@ -852,48 +682,15 @@ fn parse_unary_test() {
         parser.local_vars = vec![
             Ident {
                 name: "x".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                },
+                offset: 0,
             },
             Ident {
                 name: "p".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Ptr,
-                    ptr_to: Some(Box::new(Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    })),
-                },
+                offset: 0,
             },
             Ident {
                 name: "q".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Ptr,
-                    ptr_to: Some(Box::new(Type {
-                        kind: TypeKind::Ptr,
-                        ptr_to: Some(Box::new(Type {
-                            kind: TypeKind::Ptr,
-                            ptr_to: Some(Box::new(Type {
-                                kind: TypeKind::Ptr,
-                                ptr_to: Some(Box::new(Type {
-                                    kind: TypeKind::Ptr,
-                                    ptr_to: Some(Box::new(Type {
-                                        kind: TypeKind::Ptr,
-                                        ptr_to: Some(Box::new(Type {
-                                            kind: TypeKind::Int,
-                                            ptr_to: None,
-                                        })),
-                                    })),
-                                })),
-                            })),
-                        })),
-                    })),
-                },
+                offset: 0,
             },
         ];
         assert_eq!(expect, parser.parse_unary().unwrap())
@@ -926,28 +723,14 @@ fn parse_index_test() {
         Expression::IndexExpr(IndexExpr {
             array: Box::new(Expression::Ident(Ident {
                 name: "array".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Ptr,
-                    ptr_to: Some(Box::new(Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    })),
-                },
+                offset: 0,
             })),
             index: Box::new(Expression::Integer(Integer { value: 1 })),
         }),
         Expression::IndexExpr(IndexExpr {
             array: Box::new(Expression::Ident(Ident {
                 name: "array".to_string(),
-                offset: 8,
-                ty: Type {
-                    kind: TypeKind::Ptr,
-                    ptr_to: Some(Box::new(Type {
-                        kind: TypeKind::Int,
-                        ptr_to: None,
-                    })),
-                },
+                offset: 0,
             })),
             index: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
@@ -981,14 +764,7 @@ fn parse_index_test() {
     loop_assert(inputs, expects, |parser, expect| {
         parser.local_vars = vec![Ident {
             name: "array".to_string(),
-            offset: 8,
-            ty: Type {
-                kind: TypeKind::Ptr,
-                ptr_to: Some(Box::new(Type {
-                    kind: TypeKind::Int,
-                    ptr_to: None,
-                })),
-            },
+            offset: 0,
         }];
         assert_eq!(expect, parser.parse_index().unwrap())
     });
