@@ -3,8 +3,8 @@ pub mod error;
 use error::CompileError;
 use std::fmt::Display;
 use wervc_ast::{
-    BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, FunctionDefExpr, Integer, LetExpr, Program,
-    ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
+    Array, BinaryExpr, BinaryExprKind, BlockExpr, CallExpr, FunctionDefExpr, Integer, LetExpr,
+    Program, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
 };
 use wervc_parser::parser::Parser;
 use wervc_type::{TypedExpression, TypedExpressionKind, TypedNode};
@@ -262,6 +262,8 @@ impl Compiler {
             TypedExpressionKind::CallExpr(e) => self.gen_call_expr(e),
             TypedExpressionKind::FunctionDefExpr(e) => self.gen_function_def_expr(e),
             TypedExpressionKind::LetExpr(e) => self.gen_let_expr(e),
+            TypedExpressionKind::Array(e) => self.gen_array(e),
+            TypedExpressionKind::IndexExpr(e) => self.gen_index_expr(e),
             _ => Err(CompileError::Unimplemented),
         }
     }
@@ -534,6 +536,8 @@ impl Compiler {
 
         Ok(())
     }
+
+    fn gen_array(&self, e: &Array<TypedExpression>) -> CResult {}
 }
 
 impl Default for Compiler {

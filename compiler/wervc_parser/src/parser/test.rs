@@ -204,6 +204,8 @@ fn parse_let_expr() {
         "let id(x: int): int = x",
         "let add(x: int, y: int): int = x + y",
         "let zero(): int = 0",
+        "let arr: int[4] = [1, 2, 3, 4]",
+        "let grid: int[4][3] = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]",
     ];
     let expects = [
         Expression::LetExpr(LetExpr {
@@ -302,6 +304,56 @@ fn parse_let_expr() {
             return_ty: Type::int(),
             params: vec![],
             body: Box::new(Expression::Integer(Integer { value: 0 })),
+        }),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "arr".to_string(),
+                offset: 0,
+            })),
+            value: Box::new(Expression::Array(Array {
+                elements: vec![
+                    Expression::Integer(Integer { value: 1 }),
+                    Expression::Integer(Integer { value: 2 }),
+                    Expression::Integer(Integer { value: 3 }),
+                    Expression::Integer(Integer { value: 4 }),
+                ],
+            })),
+            ty: Type::array(Box::new(Type::int()), 4),
+        }),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "grid".to_string(),
+                offset: 0,
+            })),
+            value: Box::new(Expression::Array(Array {
+                elements: vec![
+                    Expression::Array(Array {
+                        elements: vec![
+                            Expression::Integer(Integer { value: 1 }),
+                            Expression::Integer(Integer { value: 2 }),
+                            Expression::Integer(Integer { value: 3 }),
+                            Expression::Integer(Integer { value: 4 }),
+                        ],
+                    }),
+                    Expression::Array(Array {
+                        elements: vec![
+                            Expression::Integer(Integer { value: 5 }),
+                            Expression::Integer(Integer { value: 6 }),
+                            Expression::Integer(Integer { value: 7 }),
+                            Expression::Integer(Integer { value: 8 }),
+                        ],
+                    }),
+                    Expression::Array(Array {
+                        elements: vec![
+                            Expression::Integer(Integer { value: 9 }),
+                            Expression::Integer(Integer { value: 10 }),
+                            Expression::Integer(Integer { value: 11 }),
+                            Expression::Integer(Integer { value: 12 }),
+                        ],
+                    }),
+                ],
+            })),
+            ty: Type::array(Box::new(Type::array(Box::new(Type::int()), 4)), 3),
         }),
     ];
 

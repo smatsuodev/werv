@@ -12,6 +12,10 @@ impl Type {
             TypeKind::Int => 8,
             TypeKind::Bool => 8,
             TypeKind::Ptr { .. } => 8,
+            TypeKind::Array {
+                element_ty: element_type,
+                size,
+            } => element_type.calc_size() * size,
             TypeKind::Func { .. } => 8,
             TypeKind::Unknown => 0,
             TypeKind::Never => 0,
@@ -53,6 +57,14 @@ impl Type {
             },
         }
     }
+    pub fn array(element_type: Box<Type>, size: isize) -> Type {
+        Type {
+            kind: TypeKind::Array {
+                element_ty: element_type,
+                size,
+            },
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -68,14 +80,18 @@ pub enum TypeKind {
     Ptr {
         ptr_to: Box<Type>,
     },
+    Array {
+        element_ty: Box<Type>,
+        size: isize,
+    },
 }
 
-impl<T: ToString> From<T> for TypeKind {
+impl<T: ToString> From<T> for Type {
     fn from(value: T) -> Self {
         match value.to_string().as_str() {
-            "int" => Self::Int,
-            "bool" => Self::Bool,
-            _ => Self::Unknown,
+            "int" => Self::int(),
+            "bool" => Self::bool(),
+            _ => Self::unknown(),
         }
     }
 }

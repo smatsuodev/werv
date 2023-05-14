@@ -559,7 +559,51 @@ impl TypeResolver {
 
                 expr.ty = unary_expr.ty.clone();
             }
-            _ => panic!("unimplemented type of expression: {:?}", expr),
+            TypedExpressionKind::Array(Array { elements }) => {
+                let mut ty = Type::unknown();
+                let mut size = 0;
+
+                for element in elements {
+                    self.resolve_type(element)?;
+
+                    if ty == Type::unknown() {
+                        ty = element.ty.clone();
+                    } else if ty != element.ty {
+                        return Err(TypeCheckError::TypeError {
+                            expected: ty,
+                            actual: element.ty.clone(),
+                        });
+                    }
+
+                    size += 1;
+                }
+
+                if ty == Type::unknown() {
+                    return Err(TypeCheckError::AmbiguousTypeExprError(expr.clone()));
+                }
+
+                expr.ty = Type::array(Box::new(ty), size);
+            }
+            TypedExpressionKind::IndexExpr(IndexExpr { array, index }) => {
+                self.resolve_type(array)?;
+                self.resolve_type(index)?;
+
+                if let TypeKind::Array { element_ty, .. } = &array.ty.kind {
+                    if index.ty != Type::int() {
+                        return Err(TypeCheckError::TypeError {
+                            expected: Type::int(),
+                            actual: index.ty.clone(),
+                        });
+                    }
+
+                    expr.ty = *element_ty.clone();
+                } else {
+                    return Err(TypeCheckError::TypeError {
+                        expected: Type::array(Box::new(Type::unknown()), 0),
+                        actual: array.ty.clone(),
+                    });
+                }
+            }
         }
 
         Ok(expr.ty.clone())

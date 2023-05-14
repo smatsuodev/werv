@@ -1,7 +1,7 @@
 use crate::{TypedExpression, TypedExpressionKind, TypedNode};
 use wervc_ast::{
-    ty::Type, BinaryExpr, BinaryExprKind, Boolean, FunctionDefExpr, Ident, Integer, LetExpr,
-    Program, Statement, UnaryExpr, UnaryExprKind,
+    ty::Type, Array, BinaryExpr, BinaryExprKind, Boolean, FunctionDefExpr, Ident, IndexExpr,
+    Integer, LetExpr, Program, Statement, UnaryExpr, UnaryExprKind,
 };
 
 #[test]
@@ -170,6 +170,85 @@ fn test_type_resolution() {
                 }),
             ],
         }),
+        TypedNode::Program(Program {
+            statements: vec![
+                Statement::ExprStmt(TypedExpression {
+                    kind: TypedExpressionKind::LetExpr(LetExpr {
+                        name: Box::new(TypedExpression {
+                            kind: TypedExpressionKind::Ident(Ident {
+                                name: "arr".to_string(),
+                                offset: 0,
+                            }),
+                            ty: Type::unknown(),
+                        }),
+                        value: Box::new(TypedExpression {
+                            kind: TypedExpressionKind::Array(Array {
+                                elements: vec![
+                                    TypedExpression {
+                                        kind: TypedExpressionKind::Integer(Integer { value: 1 }),
+                                        ty: Type::unknown(),
+                                    },
+                                    TypedExpression {
+                                        kind: TypedExpressionKind::Integer(Integer { value: 2 }),
+                                        ty: Type::unknown(),
+                                    },
+                                    TypedExpression {
+                                        kind: TypedExpressionKind::Integer(Integer { value: 3 }),
+                                        ty: Type::unknown(),
+                                    },
+                                    TypedExpression {
+                                        kind: TypedExpressionKind::Integer(Integer { value: 4 }),
+                                        ty: Type::unknown(),
+                                    },
+                                ],
+                            }),
+                            ty: Type::unknown(),
+                        }),
+                        ty: Type::array(Box::new(Type::int()), 4),
+                    }),
+                    ty: Type::unknown(),
+                }),
+                Statement::ExprReturnStmt(TypedExpression {
+                    kind: TypedExpressionKind::IndexExpr(IndexExpr {
+                        array: Box::new(TypedExpression {
+                            kind: TypedExpressionKind::Ident(Ident {
+                                name: "arr".to_string(),
+                                offset: 0,
+                            }),
+                            ty: Type::unknown(),
+                        }),
+                        index: Box::new(TypedExpression {
+                            kind: TypedExpressionKind::Integer(Integer { value: 1 }),
+                            ty: Type::unknown(),
+                        }),
+                    }),
+                    ty: Type::unknown(),
+                }),
+            ],
+        }),
+        TypedNode::Expression(TypedExpression {
+            kind: TypedExpressionKind::Array(Array {
+                elements: vec![
+                    TypedExpression {
+                        kind: TypedExpressionKind::Integer(Integer { value: 1 }),
+                        ty: Type::unknown(),
+                    },
+                    TypedExpression {
+                        kind: TypedExpressionKind::Integer(Integer { value: 2 }),
+                        ty: Type::unknown(),
+                    },
+                    TypedExpression {
+                        kind: TypedExpressionKind::Integer(Integer { value: 3 }),
+                        ty: Type::unknown(),
+                    },
+                    TypedExpression {
+                        kind: TypedExpressionKind::Integer(Integer { value: 4 }),
+                        ty: Type::unknown(),
+                    },
+                ],
+            }),
+            ty: Type::unknown(),
+        }),
     ];
     let expects = [
         Type::never(),
@@ -181,6 +260,8 @@ fn test_type_resolution() {
         Type::func(vec![], Box::new(Type::int())),
         Type::pointer_to(Box::new(Type::int())),
         Type::int(),
+        Type::int(),
+        Type::array(Box::new(Type::int()), 4),
     ];
 
     for (input, expect) in inputs.iter_mut().zip(expects.iter()) {

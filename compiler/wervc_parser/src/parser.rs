@@ -4,7 +4,7 @@ mod test;
 
 use self::error::ParserError;
 use wervc_ast::{
-    ty::{Type, TypeKind},
+    ty::Type,
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
     Expression::{self},
     FunctionDefExpr, Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr,
@@ -564,24 +564,34 @@ impl Parser {
         Ok(Expression::Boolean(Boolean { value: false }))
     }
 
+    /// type = ':' '*'* ident ('[' number ']')*
     fn parse_type(&mut self) -> PResult<Type> {
         if !self.consume(Colon) {
             return Ok(Type::unknown());
         }
 
-        let mut ptr_cnt = 0;
+        let mut pointer = 0;
 
-        while self.consume(TokenKind::Asterisk) {
-            ptr_cnt += 1;
+        while self.consume(Asterisk) {
+            pointer += 1;
         }
 
-        let type_name = self.expect(TokenKind::Ident)?.literal;
-        let mut ty = Type {
-            kind: TypeKind::from(type_name),
-        };
+        let ident = self.expect(Ident)?.literal;
+        let mut ty = Type::from(ident);
 
-        for _ in 0..ptr_cnt {
+        for _ in 0..pointer {
             ty = Type::pointer_to(Box::new(ty));
+        }
+
+        while self.consume(LBracket) {
+            let size = self
+                .expect(Number)?
+                .literal
+                .parse()
+                .map_err(ParserError::ParseIntError)?;
+
+            ty = Type::array(Box::new(ty), size);
+            self.expect(RBracket)?;
         }
 
         Ok(ty)
