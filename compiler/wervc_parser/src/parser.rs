@@ -11,6 +11,7 @@ use wervc_ast::{
     Statement::{self},
     UnaryExpr, UnaryExprKind,
 };
+use wervc_environment::Environment;
 use wervc_lexer::{
     lexer::Lexer,
     token::{
@@ -22,7 +23,7 @@ use wervc_lexer::{
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
-    local_vars: Vec<Ident>,
+    local_vars: Environment<String, Ident>,
 }
 
 type PResult<T> = Result<T, ParserError>;
@@ -33,7 +34,7 @@ impl Parser {
         let mut parser = Parser {
             lexer,
             cur_token: Token::default(),
-            local_vars: Vec::new(),
+            local_vars: Environment::default(),
         };
 
         parser.next_token();
@@ -80,7 +81,8 @@ impl Parser {
         let name = ident.name.clone();
         let ident = Ident { name, offset: 0 };
 
-        self.local_vars.push(ident.clone());
+        self.local_vars
+            .register_item(ident.name.clone(), ident.clone());
 
         Ok(Expression::Ident(ident))
     }
@@ -91,16 +93,19 @@ impl Parser {
         };
         let name = ident.name.clone();
 
-        if let Some(ident) = self
-            .local_vars
-            .iter()
-            .rev()
-            .find(|ident| ident.name == name)
-        {
+        if let Some(ident) = self.local_vars.get_item(&name) {
             Ok(Expression::Ident(ident.clone()))
         } else {
             Err(ParserError::UndefinedIdent(name))
         }
+    }
+
+    fn enter_scope(&mut self) {
+        self.local_vars.create_deeper_scope();
+    }
+
+    fn leave_scope(&mut self) {
+        self.local_vars.create_shallow_scope();
     }
 
     /// program = stmt*
@@ -161,6 +166,8 @@ impl Parser {
             let name = Box::new(self.create_ident(&ident)?);
             let mut params = Vec::new();
 
+            self.enter_scope();
+
             if self.consume(RParen) {
                 let mut return_ty = self.parse_type()?;
 
@@ -172,6 +179,8 @@ impl Parser {
                 self.expect(Assign)?;
 
                 let body = Box::new(self.parse_expr()?);
+
+                self.leave_scope();
 
                 return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
                     name,
@@ -207,6 +216,8 @@ impl Parser {
             self.expect(Assign)?;
 
             let body = Box::new(self.parse_expr()?);
+
+            self.leave_scope();
 
             return Ok(Expression::FunctionDefExpr(FunctionDefExpr {
                 name,
@@ -476,6 +487,8 @@ impl Parser {
 
     /// block_expr = '{' stmt* '}'
     fn parse_block_expr(&mut self) -> PResult<Expression> {
+        self.enter_scope();
+
         self.expect(LBrace)?;
 
         let mut statements = Vec::new();
@@ -493,7 +506,8 @@ impl Parser {
             statements.push(stmt);
         }
 
-        // Ok(BlockExpr(stmts))
+        self.leave_scope();
+
         Ok(Expression::BlockExpr(BlockExpr { statements }))
     }
 

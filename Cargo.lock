@@ -76,6 +76,7 @@ name = "wervc_parser"
 version = "0.1.0"
 dependencies = [
  "wervc_ast",
+ "wervc_environment",
  "wervc_lexer",
 ]
 

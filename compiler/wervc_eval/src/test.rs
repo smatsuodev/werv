@@ -31,17 +31,8 @@ where
 
 #[test]
 fn eval_error_test() {
-    let inputs = [
-        // "x;",
-        // "{ x }",
-        "{ let x: int = 10; x }; x",
-        "10 = 10",
-        "if 1 1",
-    ];
+    let inputs = ["10 = 10", "if 1 1"];
     let expects = [
-        // Err(EvalError::UndefinedVariable("x".to_string())),
-        // Err(EvalError::UndefinedVariable("x".to_string())),
-        Err(EvalError::UndefinedVariable("x".to_string())),
         Err(EvalError::IdentRequired {
             actual: Expression::Integer(Integer { value: 10 }),
         }),

@@ -117,10 +117,13 @@ fn parse_stmt_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![Ident {
-            name: "x".to_string(),
-            offset: 0,
-        }];
+        parser.local_vars.register_item(
+            "x".to_string(),
+            Ident {
+                name: "x".to_string(),
+                offset: 0,
+            },
+        );
         assert_eq!(expect, parser.parse_stmt().unwrap())
     });
 }
@@ -173,16 +176,20 @@ fn parse_binary_expr_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![
+        parser.local_vars.register_item(
+            "x".to_string(),
             Ident {
                 name: "x".to_string(),
                 offset: 0,
             },
+        );
+        parser.local_vars.register_item(
+            "y".to_string(),
             Ident {
                 name: "y".to_string(),
                 offset: 0,
             },
-        ];
+        );
         assert_eq!(expect, parser.parse_expr().unwrap())
     });
 }
@@ -412,16 +419,20 @@ fn parse_assign_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![
+        parser.local_vars.register_item(
+            "x".to_string(),
             Ident {
                 name: "x".to_string(),
                 offset: 0,
             },
+        );
+        parser.local_vars.register_item(
+            "y".to_string(),
             Ident {
                 name: "y".to_string(),
                 offset: 0,
             },
-        ];
+        );
         assert_eq!(expect, parser.parse_assign().unwrap())
     });
 }
@@ -451,10 +462,13 @@ fn parse_call_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![Ident {
-            name: "foo".to_string(),
-            offset: 0,
-        }];
+        parser.local_vars.register_item(
+            "foo".to_string(),
+            Ident {
+                name: "foo".to_string(),
+                offset: 0,
+            },
+        );
         assert_eq!(expect, parser.parse_call().unwrap())
     });
 }
@@ -679,20 +693,28 @@ fn parse_unary_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![
+        parser.local_vars.register_item(
+            "x".to_string(),
             Ident {
                 name: "x".to_string(),
                 offset: 0,
             },
+        );
+        parser.local_vars.register_item(
+            "p".to_string(),
             Ident {
                 name: "p".to_string(),
                 offset: 0,
             },
+        );
+        parser.local_vars.register_item(
+            "q".to_string(),
             Ident {
                 name: "q".to_string(),
                 offset: 0,
             },
-        ];
+        );
+
         assert_eq!(expect, parser.parse_unary().unwrap())
     });
 }
@@ -762,10 +784,13 @@ fn parse_index_test() {
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
-        parser.local_vars = vec![Ident {
-            name: "array".to_string(),
-            offset: 0,
-        }];
+        parser.local_vars.register_item(
+            "array".to_string(),
+            Ident {
+                name: "array".to_string(),
+                offset: 0,
+            },
+        );
         assert_eq!(expect, parser.parse_index().unwrap())
     });
 }
