@@ -276,7 +276,7 @@ impl Evaluator {
 
     fn eval_let_expr(&mut self, let_expr: LetExpr<Expr>) -> EResult {
         if let Expression::Ident(Ident { name, .. }) = *let_expr.name {
-            let value = self.eval_expr(*let_expr.value)?;
+            let value = self.eval_expr(*let_expr.value.unwrap())?;
 
             if value.is_return() {
                 return Ok(value);

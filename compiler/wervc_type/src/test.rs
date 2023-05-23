@@ -50,10 +50,10 @@ fn test_type_resolution() {
                     }),
                     ty: Type::unknown(),
                 }),
-                value: Box::new(TypedExpression {
+                value: Some(Box::new(TypedExpression {
                     kind: TypedExpressionKind::Integer(Integer { value: 1 }),
                     ty: Type::unknown(),
-                }),
+                })),
                 ty: Type::int(),
             }),
             ty: Type::unknown(),
@@ -87,10 +87,10 @@ fn test_type_resolution() {
                             }),
                             ty: Type::unknown(),
                         }),
-                        value: Box::new(TypedExpression {
+                        value: Some(Box::new(TypedExpression {
                             kind: TypedExpressionKind::Integer(Integer { value: 1 }),
                             ty: Type::unknown(),
-                        }),
+                        })),
                         ty: Type::int(),
                     }),
                     ty: Type::unknown(),
@@ -121,10 +121,10 @@ fn test_type_resolution() {
                             }),
                             ty: Type::unknown(),
                         }),
-                        value: Box::new(TypedExpression {
+                        value: Some(Box::new(TypedExpression {
                             kind: TypedExpressionKind::Integer(Integer { value: 1 }),
                             ty: Type::unknown(),
-                        }),
+                        })),
                         ty: Type::int(),
                     }),
                     ty: Type::unknown(),
@@ -138,7 +138,7 @@ fn test_type_resolution() {
                             }),
                             ty: Type::unknown(),
                         }),
-                        value: Box::new(TypedExpression {
+                        value: Some(Box::new(TypedExpression {
                             kind: TypedExpressionKind::UnaryExpr(UnaryExpr {
                                 kind: UnaryExprKind::Addr,
                                 expr: Box::new(TypedExpression {
@@ -150,7 +150,7 @@ fn test_type_resolution() {
                                 }),
                             }),
                             ty: Type::unknown(),
-                        }),
+                        })),
                         ty: Type::pointer_to(Box::new(Type::int())),
                     }),
                     ty: Type::unknown(),

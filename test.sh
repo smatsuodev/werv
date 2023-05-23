@@ -92,6 +92,8 @@ assert 1 "let fib(n: int): int = if n < 2 n else fib(n-1) + fib(n-2); fib(1)"
 assert 55 "let fib(n: int): int = if n < 2 n else fib(n-1) + fib(n-2); fib(10)"
 assert 1 "let mod(n: int, modder: int): int = if n < modder n else mod(n-modder, modder); mod(100001, 2)"
 assert 4 "let mod(n: int, modder: int): int = if n < modder n else mod(n-modder, modder); mod(100004, 5)"
+assert 5 "let a: int = 4; a = 5; a"
+assert 5 "let a: int; a = 5; a"
 
 assert 10 "let a: int = 10; let b: *int = &a; *b"
 assert 3 "let a: int = 3; let b: int = 5; let c: *int = &b + 1; *c"

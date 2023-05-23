@@ -13,6 +13,10 @@ impl Type {
             TypeKind::Bool => 8,
             TypeKind::Ptr { .. } => 8,
             TypeKind::Func { .. } => 8,
+            TypeKind::Array {
+                element_type,
+                length,
+            } => element_type.calc_size() * length,
             TypeKind::Unknown => 0,
             TypeKind::Never => 0,
         }
@@ -45,6 +49,14 @@ impl Type {
             kind: TypeKind::Ptr { ptr_to },
         }
     }
+    pub fn array(element_type: Box<Type>, length: isize) -> Type {
+        Type {
+            kind: TypeKind::Array {
+                element_type,
+                length,
+            },
+        }
+    }
     pub fn func(params_ty: Vec<Type>, return_ty: Box<Type>) -> Type {
         Type {
             kind: TypeKind::Func {
@@ -67,6 +79,10 @@ pub enum TypeKind {
     },
     Ptr {
         ptr_to: Box<Type>,
+    },
+    Array {
+        element_type: Box<Type>,
+        length: isize,
     },
 }
 

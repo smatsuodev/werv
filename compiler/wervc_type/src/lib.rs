@@ -57,7 +57,7 @@ impl From<Expression> for TypedExpression {
             }),
             Expression::LetExpr(e) => TypedExpressionKind::LetExpr(LetExpr {
                 name: Box::new(TypedExpression::from(*e.name)),
-                value: Box::new(TypedExpression::from(*e.value)),
+                value: e.value.map(|v| Box::new(TypedExpression::from(*v))),
                 ty: e.ty,
             }),
             Expression::BlockExpr(e) => TypedExpressionKind::BlockExpr(BlockExpr {
@@ -128,7 +128,7 @@ impl From<TypedExpression> for Expression {
             }),
             TypedExpressionKind::LetExpr(e) => Expression::LetExpr(LetExpr {
                 name: Box::new(TypedExpression::into(*e.name)),
-                value: Box::new(TypedExpression::into(*e.value)),
+                value: e.value.map(|v| Box::new(TypedExpression::into(*v))),
                 ty: e.ty,
             }),
             TypedExpressionKind::BlockExpr(e) => Expression::BlockExpr(BlockExpr {
@@ -397,14 +397,16 @@ impl TypeResolver {
                 };
             }
             TypedExpressionKind::LetExpr(LetExpr { name, value, ty }) => {
-                self.resolve_type(value)?;
+                if let Some(value) = value {
+                    self.resolve_type(value)?;
 
-                // 左辺に代入できる型でなければエラー
-                if !value.ty.is_assignable_to(ty) {
-                    return Err(TypeCheckError::TypeError {
-                        expected: ty.clone(),
-                        actual: value.ty.clone(),
-                    });
+                    // 左辺に代入できる型でなければエラー
+                    if !value.ty.is_assignable_to(ty) {
+                        return Err(TypeCheckError::TypeError {
+                            expected: ty.clone(),
+                            actual: value.ty.clone(),
+                        });
+                    }
                 }
 
                 name.ty = ty.clone();

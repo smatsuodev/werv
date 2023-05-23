@@ -523,14 +523,20 @@ impl Compiler {
     }
 
     fn gen_let_expr(&mut self, e: &LetExpr<Expr>) -> CResult {
-        self.gen_left_val(&e.name)?;
-        self.gen_expr(&e.value)?;
-
-        self.pop("%rdi");
-        self.pop("%rax");
-        self.mov("%rdi", "(%rax)");
-        self.push("%rdi");
-        self.push("%rax");
+        if let Some(value) = &e.value {
+            self.gen_left_val(&e.name)?;
+            self.gen_expr(value)?;
+            self.pop("%rdi");
+            self.pop("%rax");
+            self.mov("%rdi", "(%rax)");
+            self.push("%rdi");
+            self.push("%rax");
+        } else {
+            self.gen_left_val(&e.name)?;
+            self.pop("%rax");
+            self.push("%rax");
+            self.push("%rax");
+        }
 
         Ok(())
     }

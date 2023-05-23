@@ -230,9 +230,11 @@ impl Parser {
         let ty = self.parse_type()?;
         let name = Box::new(self.create_ident(&ident)?);
 
-        self.expect(TokenKind::Assign)?;
-
-        let value = Box::new(self.parse_expr()?);
+        let value = if self.consume(Assign) {
+            Some(Box::new(self.parse_expr()?))
+        } else {
+            None
+        };
 
         Ok(Expression::LetExpr(LetExpr { name, value, ty }))
     }
@@ -582,6 +584,17 @@ impl Parser {
 
         for _ in 0..ptr_cnt {
             ty = Type::pointer_to(Box::new(ty));
+        }
+
+        if self.consume(LBracket) {
+            let integer = self.parse_integer()?;
+
+            if let Expression::Integer(Integer { value: length }) = integer {
+                self.expect(RBracket)?;
+                ty = Type::array(Box::new(ty), length);
+            } else {
+                panic!("{:?}", ParserError::UnexpectedExpr(integer));
+            }
         }
 
         Ok(ty)

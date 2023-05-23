@@ -51,7 +51,7 @@ pub struct BinaryExpr<E> {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LetExpr<E> {
     pub name: Box<E>,
-    pub value: Box<E>,
+    pub value: Option<Box<E>>,
     pub ty: Type,
 }
 

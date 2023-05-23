@@ -61,11 +61,11 @@ fn parse_stmt_test() {
                 name: "x".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+            value: Some(Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
-            })),
+            }))),
             ty: Type::int(),
         })),
         Statement::ExprReturnStmt(Expression::LetExpr(LetExpr {
@@ -73,11 +73,11 @@ fn parse_stmt_test() {
                 name: "x".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+            value: Some(Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
-            })),
+            }))),
             ty: Type::int(),
         })),
         Statement::ExprStmt(Expression::BlockExpr(BlockExpr {
@@ -204,6 +204,7 @@ fn parse_let_expr() {
         "let id(x: int): int = x",
         "let add(x: int, y: int): int = x + y",
         "let zero(): int = 0",
+        "let arr: int[3] = [1,2,3]",
     ];
     let expects = [
         Expression::LetExpr(LetExpr {
@@ -211,11 +212,11 @@ fn parse_let_expr() {
                 name: "x".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::BinaryExpr(BinaryExpr {
+            value: Some(Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
                 lhs: Box::new(Expression::Integer(Integer { value: 1 })),
                 rhs: Box::new(Expression::Integer(Integer { value: 2 })),
-            })),
+            }))),
             ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
@@ -223,7 +224,7 @@ fn parse_let_expr() {
                 name: "y".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::Integer(Integer { value: 0 })),
+            value: Some(Box::new(Expression::Integer(Integer { value: 0 }))),
             ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
@@ -231,7 +232,7 @@ fn parse_let_expr() {
                 name: "foo_bar".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::Integer(Integer { value: 1 })),
+            value: Some(Box::new(Expression::Integer(Integer { value: 1 }))),
             ty: Type::int(),
         }),
         Expression::LetExpr(LetExpr {
@@ -239,7 +240,7 @@ fn parse_let_expr() {
                 name: "_123".to_string(),
                 offset: 0,
             })),
-            value: Box::new(Expression::Integer(Integer { value: 1 })),
+            value: Some(Box::new(Expression::Integer(Integer { value: 1 }))),
             ty: Type::int(),
         }),
         Expression::FunctionDefExpr(FunctionDefExpr {
@@ -303,6 +304,20 @@ fn parse_let_expr() {
             params: vec![],
             body: Box::new(Expression::Integer(Integer { value: 0 })),
         }),
+        Expression::LetExpr(LetExpr {
+            name: Box::new(Expression::Ident(Ident {
+                name: "arr".to_string(),
+                offset: 0,
+            })),
+            value: Some(Box::new(Expression::Array(Array {
+                elements: vec![
+                    Expression::Integer(Integer { value: 1 }),
+                    Expression::Integer(Integer { value: 2 }),
+                    Expression::Integer(Integer { value: 3 }),
+                ],
+            }))),
+            ty: Type::array(Box::new(Type::int()), 3),
+        }),
     ];
 
     loop_assert(inputs, expects, |parser, expect| {
@@ -332,7 +347,7 @@ fn parse_block_expr() {
                         name: "x".to_string(),
                         offset: 0,
                     })),
-                    value: Box::new(Expression::Integer(Integer { value: 10 })),
+                    value: Some(Box::new(Expression::Integer(Integer { value: 10 }))),
                     ty: Type::int(),
                 })),
                 Statement::ExprReturnStmt(Expression::Ident(Ident {
@@ -347,7 +362,7 @@ fn parse_block_expr() {
                     name: "x".to_string(),
                     offset: 0,
                 })),
-                value: Box::new(Expression::Integer(Integer { value: 10 })),
+                value: Some(Box::new(Expression::Integer(Integer { value: 10 }))),
                 ty: Type::int(),
             }))],
         }),
@@ -357,11 +372,11 @@ fn parse_block_expr() {
                     name: "x".to_string(),
                     offset: 0,
                 })),
-                value: Box::new(Expression::BlockExpr(BlockExpr {
+                value: Some(Box::new(Expression::BlockExpr(BlockExpr {
                     statements: vec![Statement::ExprReturnStmt(Expression::Integer(Integer {
                         value: 10,
                     }))],
-                })),
+                }))),
                 ty: Type::int(),
             }))],
         }),
