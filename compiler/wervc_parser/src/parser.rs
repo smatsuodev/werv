@@ -7,7 +7,7 @@ use wervc_ast::{
     ty::{Type, TypeKind},
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr,
     Expression::{self},
-    FunctionDefExpr, Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr,
+    FunctionDefExpr, Ident, IfExpr, Integer, LetExpr, Node, Program, ReturnExpr,
     Statement::{self},
     UnaryExpr, UnaryExprKind,
 };
@@ -415,10 +415,15 @@ impl Parser {
         while self.consume(LBracket) {
             let index = Box::new(self.parse_expr()?);
 
-            node = Expression::IndexExpr(IndexExpr {
-                array: Box::new(node),
-                index,
+            node = Expression::UnaryExpr(UnaryExpr {
+                kind: UnaryExprKind::Deref,
+                expr: Box::new(Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Add,
+                    lhs: Box::new(node),
+                    rhs: index,
+                })),
             });
+
             self.expect(RBracket)?;
         }
 
@@ -593,7 +598,7 @@ impl Parser {
                 self.expect(RBracket)?;
                 ty = Type::array(Box::new(ty), length);
             } else {
-                panic!("{:?}", ParserError::UnexpectedExpr(integer));
+                return Err(ParserError::UnexpectedExpr(integer));
             }
         }
 

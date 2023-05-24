@@ -289,39 +289,3 @@ fn eval_array_test() {
 
     loop_assert_unwrap(inputs, expects);
 }
-
-#[test]
-fn eval_index_test() {
-    let inputs = [
-        "[1, 2, 3][0]",
-        "[1, 2, 3][1]",
-        "[1, 2, 3][2]",
-        "[1, 2, 3][-1]",
-        "[1, 2, 3][-2]",
-        "[1, 2, 3][-3]",
-        "let x: *int = [1, 2, 3]; x[0]",
-        "let x: *int = [1, 2, 3]; x[1]",
-        "let x: *int = [1, 2, 3]; x[2]",
-        "let x: *int = [1, 2, 3]; x[-1]",
-        "let x: *int = [1, 2, 3]; x[-2]",
-        "let x: *int = [1, 2, 3]; x[-3]",
-        "[[1,2],[3,4]][0][0]",
-    ];
-    let expects = [
-        Integer(1),
-        Integer(2),
-        Integer(3),
-        Integer(3),
-        Integer(2),
-        Integer(1),
-        Integer(1),
-        Integer(2),
-        Integer(3),
-        Integer(3),
-        Integer(2),
-        Integer(1),
-        Integer(1),
-    ];
-
-    loop_assert_unwrap(inputs, expects);
-}

@@ -31,6 +31,15 @@ impl Type {
             (TypeKind::Int, TypeKind::Ptr { .. },)
         )
     }
+    pub fn try_cast_to_ptr(&mut self) -> Option<&Type> {
+        match &self.kind {
+            TypeKind::Array { element_type, .. } => {
+                *self = Type::pointer_to(element_type.clone());
+                Some(self)
+            }
+            _ => None,
+        }
+    }
 
     pub fn int() -> Type {
         Type::new(TypeKind::Int)

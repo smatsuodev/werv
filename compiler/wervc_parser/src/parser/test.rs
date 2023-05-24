@@ -755,46 +755,33 @@ fn parse_array_test() {
 
 #[test]
 fn parse_index_test() {
-    let inputs = ["array[1]", "array[1+2]", "[1,2,3][0]", "[[1]][0][0]"];
+    let inputs = ["array[1]", "array[1+2]"];
     let expects = [
-        Expression::IndexExpr(IndexExpr {
-            array: Box::new(Expression::Ident(Ident {
-                name: "array".to_string(),
-                offset: 0,
-            })),
-            index: Box::new(Expression::Integer(Integer { value: 1 })),
-        }),
-        Expression::IndexExpr(IndexExpr {
-            array: Box::new(Expression::Ident(Ident {
-                name: "array".to_string(),
-                offset: 0,
-            })),
-            index: Box::new(Expression::BinaryExpr(BinaryExpr {
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Deref,
+            expr: Box::new(Expression::BinaryExpr(BinaryExpr {
                 kind: BinaryExprKind::Add,
-                lhs: Box::new(Expression::Integer(Integer { value: 1 })),
-                rhs: Box::new(Expression::Integer(Integer { value: 2 })),
-            })),
-        }),
-        Expression::IndexExpr(IndexExpr {
-            array: Box::new(Expression::Array(Array {
-                elements: vec![
-                    Expression::Integer(Integer { value: 1 }),
-                    Expression::Integer(Integer { value: 2 }),
-                    Expression::Integer(Integer { value: 3 }),
-                ],
-            })),
-            index: Box::new(Expression::Integer(Integer { value: 0 })),
-        }),
-        Expression::IndexExpr(IndexExpr {
-            array: Box::new(Expression::IndexExpr(IndexExpr {
-                array: Box::new(Expression::Array(Array {
-                    elements: vec![Expression::Array(Array {
-                        elements: vec![Expression::Integer(Integer { value: 1 })],
-                    })],
+                lhs: Box::new(Expression::Ident(Ident {
+                    name: "array".to_string(),
+                    offset: 0,
                 })),
-                index: Box::new(Expression::Integer(Integer { value: 0 })),
+                rhs: Box::new(Expression::Integer(Integer { value: 1 })),
             })),
-            index: Box::new(Expression::Integer(Integer { value: 0 })),
+        }),
+        Expression::UnaryExpr(UnaryExpr {
+            kind: UnaryExprKind::Deref,
+            expr: Box::new(Expression::BinaryExpr(BinaryExpr {
+                kind: BinaryExprKind::Add,
+                lhs: Box::new(Expression::Ident(Ident {
+                    name: "array".to_string(),
+                    offset: 0,
+                })),
+                rhs: Box::new(Expression::BinaryExpr(BinaryExpr {
+                    kind: BinaryExprKind::Add,
+                    lhs: Box::new(Expression::Integer(Integer { value: 1 })),
+                    rhs: Box::new(Expression::Integer(Integer { value: 2 })),
+                })),
+            })),
         }),
     ];
 

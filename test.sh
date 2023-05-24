@@ -107,4 +107,26 @@ y = &x;
 return x;
 "
 
+assert 3 "let a: int[2];
+*a = 1;
+*(a + 1) = 2;
+let p: *int;
+p = a;
+*p + *(p + 1)
+"
+
+assert 3 "let a: int[2];
+a[0] = 1;
+a[1] = 2;
+let p: *int;
+p = a;
+p[0] + p[1]
+"
+
+assert 3 "
+let g: int = 3;
+let closure(): int = g;
+closure()
+"
+
 echo OK

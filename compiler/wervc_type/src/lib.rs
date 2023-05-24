@@ -6,7 +6,7 @@ use error::TypeCheckError;
 use wervc_ast::{
     ty::{Type, TypeKind},
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr, Expression, FunctionDefExpr,
-    Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, Program, ReturnExpr, Statement, UnaryExpr,
+    Ident, IfExpr, Integer, LetExpr, Node, Program, ReturnExpr, Statement, UnaryExpr,
     UnaryExprKind,
 };
 use wervc_environment::Environment;
@@ -38,7 +38,6 @@ pub enum TypedExpressionKind {
     IfExpr(IfExpr<TypedExpression>),
     ReturnExpr(ReturnExpr<TypedExpression>),
     UnaryExpr(UnaryExpr<TypedExpression>),
-    IndexExpr(IndexExpr<TypedExpression>),
 }
 
 impl From<Expression> for TypedExpression {
@@ -99,10 +98,6 @@ impl From<Expression> for TypedExpression {
             Expression::UnaryExpr(e) => TypedExpressionKind::UnaryExpr(UnaryExpr {
                 kind: e.kind,
                 expr: Box::new(TypedExpression::from(*e.expr)),
-            }),
-            Expression::IndexExpr(e) => TypedExpressionKind::IndexExpr(IndexExpr {
-                array: Box::new(TypedExpression::from(*e.array)),
-                index: Box::new(TypedExpression::from(*e.index)),
             }),
         };
 
@@ -170,10 +165,6 @@ impl From<TypedExpression> for Expression {
             TypedExpressionKind::UnaryExpr(e) => Expression::UnaryExpr(UnaryExpr {
                 kind: e.kind,
                 expr: Box::new(TypedExpression::into(*e.expr)),
-            }),
-            TypedExpressionKind::IndexExpr(e) => Expression::IndexExpr(IndexExpr {
-                array: Box::new(TypedExpression::into(*e.array)),
-                index: Box::new(TypedExpression::into(*e.index)),
             }),
         }
     }
@@ -322,6 +313,9 @@ impl TypeResolver {
             TypedExpressionKind::BinaryExpr(BinaryExpr { kind, lhs, rhs }) => {
                 self.resolve_type(lhs)?;
                 self.resolve_type(rhs)?;
+
+                lhs.ty.try_cast_to_ptr();
+                rhs.ty.try_cast_to_ptr();
 
                 match kind {
                     BinaryExprKind::Eq
@@ -545,6 +539,8 @@ impl TypeResolver {
                         unary_expr.ty = Type::bool();
                     }
                     UnaryExprKind::Deref => {
+                        unary_expr.ty.try_cast_to_ptr();
+
                         if let TypeKind::Ptr { ptr_to } = &unary_expr.ty.kind {
                             unary_expr.ty = *ptr_to.clone();
                         } else {

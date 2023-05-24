@@ -94,12 +94,6 @@ pub struct UnaryExpr<E> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct IndexExpr<E> {
-    pub array: Box<E>,
-    pub index: Box<E>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
     Integer(Integer),
     Ident(Ident),
@@ -113,7 +107,6 @@ pub enum Expression {
     IfExpr(IfExpr<Expression>),
     ReturnExpr(ReturnExpr<Expression>),
     UnaryExpr(UnaryExpr<Expression>),
-    IndexExpr(IndexExpr<Expression>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

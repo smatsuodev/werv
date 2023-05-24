@@ -9,8 +9,7 @@ use environment::Environment;
 use error::EvalError;
 use wervc_ast::{
     Array, BinaryExpr, BinaryExprKind, BlockExpr, Boolean, CallExpr, Expression, FunctionDefExpr,
-    Ident, IfExpr, IndexExpr, Integer, LetExpr, Node, ReturnExpr, Statement, UnaryExpr,
-    UnaryExprKind,
+    Ident, IfExpr, Integer, LetExpr, Node, ReturnExpr, Statement, UnaryExpr, UnaryExprKind,
 };
 use wervc_object::Object::{self, *};
 
@@ -105,7 +104,6 @@ impl Evaluator {
             Expression::CallExpr(e) => self.eval_call_expr(e),
             Expression::Integer(e) => self.eval_integer(e),
             Expression::FunctionDefExpr(e) => self.eval_function_def_expr(e),
-            Expression::IndexExpr(e) => self.eval_index_expr(e),
         }
     }
 
@@ -409,32 +407,5 @@ impl Evaluator {
 
     fn eval_integer(&mut self, integer: Integer) -> EResult {
         Ok(Integer(integer.value))
-    }
-
-    fn eval_index_expr(&mut self, index_expr: IndexExpr<Expr>) -> Result<Object, EvalError> {
-        let array = self.eval_expr(*index_expr.array)?;
-        let index = self.eval_expr(*index_expr.index)?;
-
-        if let Array(elements) = array {
-            if let Integer(index) = index {
-                if let Ok(index) = index.try_into() {
-                    return elements.into_iter().nth(index).ok_or(EvalError::OutOfRange);
-                }
-
-                let index: usize = index.abs().try_into().unwrap();
-
-                if index > elements.len() {
-                    return Err(EvalError::OutOfRange);
-                }
-
-                let index: usize = elements.len() - index;
-
-                return elements.into_iter().nth(index).ok_or(EvalError::OutOfRange);
-            }
-
-            return Err(EvalError::UnexpectedObject(index));
-        }
-
-        Err(EvalError::UnexpectedObject(array))
     }
 }
